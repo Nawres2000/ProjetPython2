@@ -1,7 +1,7 @@
 import Label      from "./ui/Label";
 import Select     from "./ui/Select";
 import SkillBadge from "./ui/SkillBadge";
-import { COUNTRIES, SCHEDULE_TYPES, SKILLS } from "../constants/filters";
+import { COUNTRIES, SCHEDULE_TYPES, SKILLS, JOB_VIA_OPTIONS } from "../constants/filters";
 import { inputStyle } from "../styles/theme";
 
 export default function InputPanel({ form, updateField, toggleSkill, onPredict, loading }) {
@@ -11,10 +11,39 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: 18,
       padding: 30,
+      overflowY: "auto",
+      maxHeight: "85vh",
     }}>
       <h2 style={{ margin: "0 0 24px", fontSize: 17, fontWeight: 600, color: "#f0f0f0" }}>
         🔍 Configure Your Profile
       </h2>
+
+      {/* Job Title — REQUIRED */}
+      <Label text="Job Title *" />
+      <input
+        placeholder="e.g. Senior Data Engineer"
+        value={form.jobTitle}
+        onChange={(e) => updateField("jobTitle", e.target.value)}
+        style={{ ...inputStyle, marginBottom: 20, border: "1px solid rgba(167,139,250,0.4)" }}
+      />
+
+      {/* Job Via */}
+      <Label text="Posted Via" />
+      <Select
+        value={form.jobVia}
+        onChange={(v) => updateField("jobVia", v)}
+        options={JOB_VIA_OPTIONS}
+        placeholder="Select platform..."
+      />
+
+      {/* Company */}
+      <Label text="Company Name" />
+      <input
+        placeholder="e.g. Amazon, Google..."
+        value={form.company}
+        onChange={(e) => updateField("company", e.target.value)}
+        style={{ ...inputStyle, marginBottom: 20 }}
+      />
 
       {/* Country */}
       <Label text="Country" />
@@ -23,6 +52,15 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
         onChange={(v) => updateField("country", v)}
         options={COUNTRIES}
         placeholder="Select country..."
+      />
+
+      {/* Location */}
+      <Label text="Job Location" />
+      <input
+        placeholder="e.g. New York, NY"
+        value={form.location}
+        onChange={(e) => updateField("location", e.target.value)}
+        style={{ ...inputStyle, marginBottom: 20 }}
       />
 
       {/* Schedule */}
@@ -34,31 +72,13 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
         placeholder="Select schedule..."
       />
 
-      {/* Salary */}
-      <Label text="Expected Salary Range ($/year)" />
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        <input
-          placeholder="Min (e.g. 60000)"
-          value={form.salaryMin}
-          onChange={(e) => updateField("salaryMin", e.target.value)}
-          style={inputStyle}
-        />
-        <input
-          placeholder="Max (e.g. 120000)"
-          value={form.salaryMax}
-          onChange={(e) => updateField("salaryMax", e.target.value)}
-          style={inputStyle}
-        />
-      </div>
-
       {/* Work Preference */}
       <Label text="Work Preference" />
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
         {["Remote", "On-site"].map((opt) => {
           const active = (opt === "Remote") === form.workFromHome;
           return (
-            <button
-              key={opt}
+            <button key={opt}
               onClick={() => updateField("workFromHome", opt === "Remote")}
               style={{
                 flex: 1, padding: "10px", borderRadius: 10,
@@ -73,6 +93,28 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
             </button>
           );
         })}
+      </div>
+
+      {/* Checkboxes */}
+      <Label text="Job Benefits" />
+      <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+        {[
+          { field: "noDegree",         label: "🎓 No Degree Required" },
+          { field: "healthInsurance",  label: "🏥 Health Insurance"   },
+        ].map(({ field, label }) => (
+          <label key={field} style={{
+            display: "flex", alignItems: "center", gap: 8,
+            cursor: "pointer", fontSize: 13, color: "#ccc",
+          }}>
+            <input
+              type="checkbox"
+              checked={form[field]}
+              onChange={(e) => updateField(field, e.target.checked)}
+              style={{ accentColor: "#a78bfa", width: 16, height: 16 }}
+            />
+            {label}
+          </label>
+        ))}
       </div>
 
       {/* Skills */}
@@ -96,7 +138,8 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
           width: "100%", padding: "14px", borderRadius: 12,
           background: "linear-gradient(135deg, #667eea, #764ba2)",
           border: "none", color: "#fff", fontWeight: 700,
-          fontSize: 15, cursor: "pointer", letterSpacing: 0.5,
+          fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
+          letterSpacing: 0.5,
           boxShadow: "0 4px 20px rgba(102,126,234,0.4)",
           opacity: loading ? 0.7 : 1,
           transition: "opacity 0.2s",

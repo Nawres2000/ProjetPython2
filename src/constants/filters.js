@@ -8,6 +8,12 @@ export const SCHEDULE_TYPES = [
 ];
 
 export const SKILLS = [
-  "Python", "SQL", "AWS", "Spark",
-  "TensorFlow", "Tableau", "Excel", "Java", "R",
+  "python", "sql", "aws", "spark", "tensorflow",
+  "tableau", "excel", "java", "r", "azure",
+  "docker", "kubernetes", "power bi", "scala", "airflow",
+];
+
+export const JOB_VIA_OPTIONS = [
+  "LinkedIn", "Indeed", "Glassdoor", "ZipRecruiter",
+  "Monster", "CareerBuilder", "Company Website",
 ];

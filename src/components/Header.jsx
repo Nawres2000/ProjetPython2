@@ -1,6 +1,6 @@
 import { glassButton } from "../styles/theme";
 
-export default function Header() {
+export default function Header({ backendOk }) {
   return (
     <div style={{
       background: "rgba(255,255,255,0.05)",
@@ -29,6 +29,23 @@ export default function Header() {
         <div style={{ fontSize: 12, color: "#aaa" }}>
           ML-Powered Job Demand Predictor
         </div>
+      </div>
+
+      {/* Backend Status */}
+      <div style={{
+        marginLeft: 24,
+        display: "flex", alignItems: "center", gap: 6,
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 20, padding: "5px 12px",
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: backendOk === null ? "#888" : backendOk ? "#6ee7b7" : "#e87885",
+        }} />
+        <span style={{ fontSize: 11, color: "#aaa" }}>
+          {backendOk === null ? "Checking..." : backendOk ? "Backend Online" : "Backend Offline"}
+        </span>
       </div>
 
       {/* Nav */}
