@@ -1,30 +1,23 @@
 import { useState, useEffect } from "react";
-import { predictJobs, fetchSalaryInsights, fetchSkillsGap, checkHealth } from "../services/api";
+import { predictJobs, checkHealth } from "../services/api";
 
 const initialForm = {
-  jobTitle:        "",
   jobVia:          "",
-  company:         "",
-  location:        "",
   country:         "",
   schedule:        "",
   workFromHome:    false,
   noDegree:        false,
   healthInsurance: false,
   skills:          [],
-  salaryMin:       "",
-  salaryMax:       "",
 };
 
 export function usePredictor() {
-  const [form, setForm]           = useState(initialForm);
-  const [results, setResults]     = useState(null);
-  const [predictedLabel, setLabel]= useState(null);
-  const [salaryData, setSalary]   = useState(null);
-  const [skillsGap, setSkillsGap] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
-  const [backendOk, setBackendOk] = useState(null);
+  const [form, setForm]            = useState(initialForm);
+  const [results, setResults]      = useState(null);
+  const [predictedLabel, setLabel] = useState(null);
+  const [loading, setLoading]      = useState(false);
+  const [error, setError]          = useState(null);
+  const [backendOk, setBackendOk]  = useState(null);
 
   useEffect(() => {
     checkHealth().then(setBackendOk);
@@ -42,29 +35,14 @@ export function usePredictor() {
     }));
 
   const handlePredict = async () => {
-    if (!form.jobTitle) {
-      setError("Please enter a Job Title first.");
-      return;
-    }
     setLoading(true);
     setError(null);
     setResults(null);
     setLabel(null);
-    setSalary(null);
-    setSkillsGap(null);
-
     try {
-      // Run all 3 API calls in parallel
-      const [predResult, salaryResult, gapResult] = await Promise.all([
-        predictJobs(form),
-        fetchSalaryInsights(form),
-        fetchSkillsGap(form),
-      ]);
-
-      setResults(predResult.predictions);
-      setLabel(predResult.predictedLabel);
-      setSalary(salaryResult);
-      setSkillsGap(gapResult);
+      const { predictions, predictedLabel } = await predictJobs(form);
+      setResults(predictions);
+      setLabel(predictedLabel);
     } catch (err) {
       setError("Prediction failed. Please try again.");
     } finally {
@@ -76,14 +54,11 @@ export function usePredictor() {
     setForm(initialForm);
     setResults(null);
     setLabel(null);
-    setSalary(null);
-    setSkillsGap(null);
     setError(null);
   };
 
   return {
-    form, results, predictedLabel, salaryData, skillsGap,
-    loading, error, backendOk,
+    form, results, predictedLabel, loading, error, backendOk,
     updateField, toggleSkill, handlePredict, reset,
   };
 }

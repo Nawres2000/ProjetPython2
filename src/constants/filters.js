@@ -1,19 +1,118 @@
 export const COUNTRIES = [
-  "United States", "France", "Germany",
-  "United Kingdom", "Canada", "India", "Australia",
-];
+  "Afghanistan", "Albania", "Algeria", "Angola", "Antigua and Barbuda",
+  "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus",
+  "Belgium", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+  "Cambodia", "Cameroon", "Canada", "Cayman Islands", "Chile",
+  "China", "Colombia", "Congo, Democratic Republic of the", "Costa Rica", "Côte d'Ivoire",
+  "Croatia", "Curaçao", "Cyprus", "Czechia", "Denmark",
+  "Djibouti", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
+  "Estonia", "Ethiopia", "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Germany", "Ghana", "Greece",
+  "Grenada", "Guadeloupe", "Guam", "Guatemala", "Guinea",
+  "Guyana", "Haiti", "Honduras", "Hong Kong", "Hungary",
+  "Iceland", "India", "Indonesia", "Iraq", "Ireland",
+  "Israel", "Italy", "Jamaica", "Japan", "Jordan",
+  "Kazakhstan", "Kenya", "Kuwait", "Kyrgyzstan", "Laos",
+  "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya",
+  "Lithuania", "Luxembourg", "Macedonia (FYROM)", "Madagascar", "Malawi",
+  "Malaysia", "Maldives", "Mali", "Malta", "Mauritania",
+  "Mauritius", "Mexico", "Moldova", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Namibia", "Nepal",
+  "Netherlands", "New Zealand", "Nicaragua", "Nigeria", "Northern Mariana Islands",
+  "Norway", "Oman", "Pakistan", "Palestine", "Panama",
+  "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland",
+  "Portugal", "Puerto Rico", "Qatar", "Réunion", "Romania",
+  "Russia", "Rwanda", "Saint Lucia", "Saint Vincent and the Grenadines", "Saudi Arabia",
+  "Senegal", "Serbia", "Sierra Leone", "Singapore", "Slovakia",
+  "Slovenia", "Somalia", "South Africa", "South Korea", "Spain",
+  "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Togo",
+  "Trinidad and Tobago", "Tunisia", "Turkey", "Uganda", "Ukraine",
+  "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "U.S. Virgin Islands",
+  "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam", "Western Sahara",
+  "Yemen", "Zambia", "Zimbabwe",
+].sort();
 
 export const SCHEDULE_TYPES = [
   "Full-time", "Part-time", "Contract", "Internship", "Temporary",
 ];
 
-export const SKILLS = [
-  "python", "sql", "aws", "spark", "tensorflow",
-  "tableau", "excel", "java", "r", "azure",
-  "docker", "kubernetes", "power bi", "scala", "airflow",
-];
+export const SKILLS_BY_CATEGORY = {
+  PROGRAMMING: [
+    'apl', 'assembly', 'bash', 'c', 'c#', 'c++', 'clojure', 'cobol',
+    'crystal', 'css', 'dart', 'delphi', 'elixir', 'erlang', 'f#',
+    'fortran', 'go', 'golang', 'groovy', 'haskell', 'html', 'java',
+    'javascript', 'julia', 'kotlin', 'lisp', 'lua', 'matlab', 'mongo',
+    'mongodb', 'no-sql', 'nosql', 'objective-c', 'ocaml', 'pascal',
+    'perl', 'php', 'powershell', 'python', 'r', 'ruby', 'rust', 'sas',
+    'sass', 'scala', 'shell', 'solidity', 'sql', 'swift', 't-sql',
+    'typescript', 'vb.net', 'vba', 'visual basic', 'visualbasic',
+  ],
+  ANALYST_TOOLS: [
+    'alteryx', 'cognos', 'datarobot', 'dax', 'esquisse', 'excel',
+    'looker', 'microstrategy', 'ms access', 'msaccess', 'nuix',
+    'outlook', 'power bi', 'powerbi', 'powerpoint', 'qlik', 'sap',
+    'sas', 'sharepoint', 'sheets', 'splunk', 'spreadsheet', 'spss',
+    'ssis', 'ssrs', 'tableau', 'visio', 'word',
+  ],
+  CLOUD: [
+    'aurora', 'aws', 'azure', 'bigquery', 'colocation', 'databricks',
+    'digitalocean', 'firebase', 'gcp', 'heroku', 'ibm cloud', 'linode',
+    'openstack', 'oracle', 'ovh', 'redshift', 'snowflake', 'vmware', 'watson',
+  ],
+  LIBRARIES: [
+    'airflow', 'capacitor', 'chainer', 'cordova', 'dlib', 'dplyr',
+    'electron', 'flutter', 'gdpr', 'ggplot2', 'graphql', 'gtx', 'hadoop',
+    'hugging face', 'huggingface', 'ionic', 'jupyter', 'kafka', 'keras',
+    'matplotlib', 'mlpack', 'mlr', 'mxnet', 'nltk', 'numpy', 'opencv',
+    'pandas', 'plotly', 'pyspark', 'pytorch', 'qt', 'react', 'rshiny',
+    'scikit-learn', 'seaborn', 'selenium', 'shogun', 'spark', 'spring',
+    'tensorflow', 'theano', 'tidyr', 'tidyverse', 'xamarin',
+  ],
+  OTHER: [
+    'ansible', 'atlassian', 'bitbucket', 'chef', 'codecommit', 'docker',
+    'flow', 'git', 'github', 'gitlab', 'homebrew', 'jenkins', 'kubernetes',
+    'npm', 'pulumi', 'puppet', 'svn', 'terminal', 'terraform', 'unity',
+    'unreal', 'yarn',
+  ],
+  DATABASES: [
+    'cassandra', 'couchbase', 'couchdb', 'db2', 'dynamodb', 'elasticsearch',
+    'firebase', 'firestore', 'mariadb', 'mongodb', 'mysql', 'neo4j',
+    'postgresql', 'redis', 'sql server', 'sqlite', 'sqlserver',
+  ],
+  OS: [
+    'arch', 'centos', 'debian', 'fedora', 'kali', 'linux', 'macos',
+    'redhat', 'suse', 'ubuntu', 'unix', 'windows', 'wsl',
+  ],
+  FRAMEWORKS: [
+    'angular', 'angular.js', 'asp.net', 'asp.net core', 'asp.netcore',
+    'blazor', 'deno', 'django', 'drupal', 'ember.js', 'express', 'fastapi',
+    'fastify', 'flask', 'gatsby', 'jquery', 'laravel', 'next.js', 'node',
+    'node.js', 'nuxt.js', 'phoenix', 'play framework', 'react.js', 'ruby',
+    'ruby on rails', 'rubyon rails', 'svelte', 'symfony', 'vue', 'vue.js',
+  ],
+};
 
-export const JOB_VIA_OPTIONS = [
-  "LinkedIn", "Indeed", "Glassdoor", "ZipRecruiter",
-  "Monster", "CareerBuilder", "Company Website",
-];
+export const CATEGORY_ICONS = {
+  PROGRAMMING:   "💻",
+  ANALYST_TOOLS: "📊",
+  CLOUD:         "☁️",
+  LIBRARIES:     "📚",
+  OTHER:         "🔧",
+  DATABASES:     "🗄️",
+  OS:            "🖥️",
+  FRAMEWORKS:    "⚙️",
+};
+
+export const CATEGORY_COLORS = {
+  PROGRAMMING:   "#60a5fa",
+  ANALYST_TOOLS: "#f4a24d",
+  CLOUD:         "#6ee7b7",
+  LIBRARIES:     "#a78bfa",
+  OTHER:         "#e87885",
+  DATABASES:     "#fbbf24",
+  OS:            "#34d399",
+  FRAMEWORKS:    "#818cf8",
+};

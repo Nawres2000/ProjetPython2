@@ -1,8 +1,96 @@
-import Label      from "./ui/Label";
-import Select     from "./ui/Select";
-import SkillBadge from "./ui/SkillBadge";
-import { COUNTRIES, SCHEDULE_TYPES, SKILLS, JOB_VIA_OPTIONS } from "../constants/filters";
+import { useState, useRef, useEffect } from "react";
+import Label          from "./ui/Label";
+import Select         from "./ui/Select";
+import SkillsSelector from "./ui/SkillsSelector";
+import { COUNTRIES, SCHEDULE_TYPES } from "../constants/filters";
 import { inputStyle } from "../styles/theme";
+
+// Searchable country dropdown component
+function CountrySelect({ value, onChange }) {
+  const [search, setSearch]   = useState(value || "");
+  const [open, setOpen]       = useState(false);
+  const [focused, setFocused] = useState(false);
+  const ref = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        if (!value) setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [value]);
+
+  const filtered = COUNTRIES.filter((c) =>
+    c.toLowerCase().includes(search.toLowerCase())
+  ).slice(0, 50); // max 50 results at a time
+
+  const handleSelect = (country) => {
+    onChange(country);
+    setSearch(country);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", marginBottom: 20 }}>
+      <input
+        placeholder="Search country..."
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setOpen(true);
+          if (e.target.value === "") onChange("");
+        }}
+        onFocus={() => { setOpen(true); setFocused(true); }}
+        style={{
+          ...inputStyle,
+          borderColor: focused ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.1)",
+        }}
+      />
+      {/* Selected indicator */}
+      {value && (
+        <span style={{
+          position: "absolute", right: 10, top: "50%",
+          transform: "translateY(-50%)",
+          fontSize: 11, color: "#a78bfa",
+        }}>✓</span>
+      )}
+      {/* Dropdown */}
+      {open && filtered.length > 0 && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+          background: "#1e1b3a",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 10, zIndex: 100,
+          maxHeight: 200, overflowY: "auto",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+        }}>
+          {filtered.map((country) => (
+            <div
+              key={country}
+              onMouseDown={() => handleSelect(country)}
+              style={{
+                padding: "8px 14px",
+                fontSize: 13,
+                cursor: "pointer",
+                color: country === value ? "#a78bfa" : "#ccc",
+                background: country === value ? "rgba(167,139,250,0.1)" : "transparent",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => e.target.style.background = "rgba(255,255,255,0.05)"}
+              onMouseLeave={(e) => e.target.style.background = country === value ? "rgba(167,139,250,0.1)" : "transparent"}
+            >
+              {country}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function InputPanel({ form, updateField, toggleSkill, onPredict, loading }) {
   return (
@@ -18,49 +106,20 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
         🔍 Configure Your Profile
       </h2>
 
-      {/* Job Title — REQUIRED */}
-      <Label text="Job Title *" />
-      <input
-        placeholder="e.g. Senior Data Engineer"
-        value={form.jobTitle}
-        onChange={(e) => updateField("jobTitle", e.target.value)}
-        style={{ ...inputStyle, marginBottom: 20, border: "1px solid rgba(167,139,250,0.4)" }}
-      />
-
-      {/* Job Via */}
+      {/* Posted Via — free text input */}
       <Label text="Posted Via" />
-      <Select
-        value={form.jobVia}
-        onChange={(v) => updateField("jobVia", v)}
-        options={JOB_VIA_OPTIONS}
-        placeholder="Select platform..."
-      />
-
-      {/* Company */}
-      <Label text="Company Name" />
       <input
-        placeholder="e.g. Amazon, Google..."
-        value={form.company}
-        onChange={(e) => updateField("company", e.target.value)}
+        placeholder="e.g. LinkedIn, Indeed, Glassdoor..."
+        value={form.jobVia}
+        onChange={(e) => updateField("jobVia", e.target.value)}
         style={{ ...inputStyle, marginBottom: 20 }}
       />
 
-      {/* Country */}
+      {/* Country — searchable dropdown */}
       <Label text="Country" />
-      <Select
+      <CountrySelect
         value={form.country}
         onChange={(v) => updateField("country", v)}
-        options={COUNTRIES}
-        placeholder="Select country..."
-      />
-
-      {/* Location */}
-      <Label text="Job Location" />
-      <input
-        placeholder="e.g. New York, NY"
-        value={form.location}
-        onChange={(e) => updateField("location", e.target.value)}
-        style={{ ...inputStyle, marginBottom: 20 }}
       />
 
       {/* Schedule */}
@@ -99,8 +158,8 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
       <Label text="Job Benefits" />
       <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
         {[
-          { field: "noDegree",         label: "🎓 No Degree Required" },
-          { field: "healthInsurance",  label: "🏥 Health Insurance"   },
+          { field: "noDegree",        label: "🎓 No Degree Required" },
+          { field: "healthInsurance", label: "🏥 Health Insurance"   },
         ].map(({ field, label }) => (
           <label key={field} style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -117,18 +176,12 @@ export default function InputPanel({ form, updateField, toggleSkill, onPredict, 
         ))}
       </div>
 
-      {/* Skills */}
+      {/* Skills Selector */}
       <Label text="Your Skills" />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28 }}>
-        {SKILLS.map((skill) => (
-          <SkillBadge
-            key={skill}
-            skill={skill}
-            selected={form.skills.includes(skill)}
-            onToggle={toggleSkill}
-          />
-        ))}
-      </div>
+      <SkillsSelector
+        selectedSkills={form.skills}
+        onToggle={toggleSkill}
+      />
 
       {/* Predict Button */}
       <button
