@@ -63,8 +63,19 @@ export default function CVAnalyzer() {
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
       const text = await response.text();
-      const cleaned = text.replace(/```json|```/g, "").trim();
 
+      // Step 1: unwrap n8n's { output: "..." } wrapper if present
+      let raw = text;
+      try {
+        const outer = JSON.parse(text);
+        raw = outer.output ?? outer.text ?? outer.result ?? outer.message ?? text;
+      } catch { /* not a JSON wrapper, use raw text */ }
+
+      // Step 2: clean markdown code fences Groq sometimes adds
+      const cleaned = (typeof raw === "string" ? raw : JSON.stringify(raw))
+        .replace(/```json|```/g, "").trim();
+
+      // Step 3: parse the actual result
       let parsed;
       try {
         parsed = JSON.parse(cleaned);
@@ -72,11 +83,12 @@ export default function CVAnalyzer() {
         const match = cleaned.match(/\{[\s\S]*\}/);
         if (match) {
           try { parsed = JSON.parse(match[0]); }
-          catch { parsed = { raw: text }; }
+          catch { parsed = { raw: cleaned }; }
         } else {
-          parsed = { raw: text };
+          parsed = { raw: cleaned };
         }
       }
+
       setResult(parsed);
     } catch (err) {
       clearInterval(interval);
@@ -191,22 +203,20 @@ export default function CVAnalyzer() {
 }
 
 function ResultCard({ result }) {
-  const jobTitles    = result.job_titles    || result.recommendedJobs || [];
-  const topSkills    = result.top_skills    || result.topSkills       || [];
-  const careerAdvice = result.career_advice || result.careerAdvice    || null;
-  const candidateName = result.candidate_name || result.candidateName || null;
-  const expLevel     = result.experience_level || result.experienceLevel || null;
+  const jobTitles     = result.job_titles    || result.recommendedJobs || [];
+  const topSkills     = result.top_skills    || result.topSkills       || [];
+  const careerAdvice  = result.career_advice || result.careerAdvice    || null;
+  const candidateName = result.candidate_name || result.candidateName  || null;
+  const expLevel      = result.experience_level || result.experienceLevel || null;
 
-  const bestJobObj   = jobTitles[0] || null;
-  const bestJob      = bestJobObj?.title || result.best_job || null;
-  const bestSalary   = bestJobObj?.salary_range_usd_per_year || null;
-  const bestExp      = bestJobObj?.explanation || null;
+  const bestJobObj  = jobTitles[0] || null;
+  const bestJob     = bestJobObj?.title || result.best_job || null;
+  const bestSalary  = bestJobObj?.salary_range_usd_per_year || null;
+  const bestExp     = bestJobObj?.explanation || null;
 
-  const skills       = topSkills.length > 0 ? topSkills : (result.skills || result.matched_skills || []);
-  const allJobs      = jobTitles.length > 1 ? jobTitles : null;
-
-  // Fallback for unstructured text
-  const isRaw        = !bestJob && !allJobs && !skills.length && !careerAdvice;
+  const skills  = topSkills.length > 0 ? topSkills : (result.skills || result.matched_skills || []);
+  const allJobs = jobTitles.length > 1 ? jobTitles : null;
+  const isRaw   = !bestJob && !allJobs && !skills.length && !careerAdvice;
 
   return (
     <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 28 }}>
@@ -266,12 +276,7 @@ function ResultCard({ result }) {
               const barWidth  = Math.max(95 - i * 12, 35);
 
               return (
-                <div key={i} style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 12, padding: "14px 16px",
-                }}>
-                  {/* Row 1: emoji + title + salary */}
+                <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 20 }}>{getEmoji(jobName)}</span>
@@ -283,25 +288,14 @@ function ResultCard({ result }) {
                       </span>
                     )}
                   </div>
-
-                  {/* Progress bar */}
                   <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 10, overflow: "hidden", marginBottom: exp || skillsDev.length ? 10 : 0 }}>
                     <div style={{ width: `${barWidth}%`, height: "100%", background: "linear-gradient(90deg, #667eea, #764ba2)", borderRadius: 10, transition: "width 0.6s ease" }} />
                   </div>
-
-                  {/* Explanation */}
-                  {exp && (
-                    <p style={{ margin: "0 0 8px", fontSize: 12, color: "#8880a0", lineHeight: 1.6 }}>{exp}</p>
-                  )}
-
-                  {/* Skills to develop */}
+                  {exp && <p style={{ margin: "0 0 8px", fontSize: 12, color: "#8880a0", lineHeight: 1.6 }}>{exp}</p>}
                   {skillsDev.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {skillsDev.map((s, j) => (
-                        <span key={j} style={{
-                          padding: "2px 9px", borderRadius: 20, fontSize: 10,
-                          background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa",
-                        }}>+ {s}</span>
+                        <span key={j} style={{ padding: "2px 9px", borderRadius: 20, fontSize: 10, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa" }}>+ {s}</span>
                       ))}
                     </div>
                   )}
@@ -320,10 +314,7 @@ function ResultCard({ result }) {
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {skills.map((skill, i) => (
-              <span key={i} style={{
-                padding: "4px 10px", borderRadius: 20, fontSize: 11,
-                background: "rgba(96,165,250,0.15)", border: "1px solid rgba(96,165,250,0.3)", color: "#60a5fa",
-              }}>{skill}</span>
+              <span key={i} style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, background: "rgba(96,165,250,0.15)", border: "1px solid rgba(96,165,250,0.3)", color: "#60a5fa" }}>{skill}</span>
             ))}
           </div>
         </div>
@@ -335,9 +326,7 @@ function ResultCard({ result }) {
           <div style={{ fontSize: 12, color: "#888", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
             📝 Career Advice
           </div>
-          <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.8 }}>
-            {careerAdvice}
-          </div>
+          <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.8 }}>{careerAdvice}</div>
         </div>
       )}
 
