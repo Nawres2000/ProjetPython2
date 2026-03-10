@@ -19,17 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Chargement de tous les objets
-model        = joblib.load("data/best_model_pipeline.pkl")  if os.path.exists("data/best_model_pipeline.pkl")  else None
-le           = joblib.load("data/label_encoder.pkl")         if os.path.exists("data/label_encoder.pkl")         else None
-oe           = joblib.load("data/ordinal_encoder.pkl")       if os.path.exists("data/ordinal_encoder.pkl")       else None
-mlb_skills   = joblib.load("data/mlb_skills.pkl")            if os.path.exists("data/mlb_skills.pkl")            else None
-mlb_cat      = joblib.load("data/mlb_cat.pkl")               if os.path.exists("data/mlb_cat.pkl")               else None
-tfidf        = joblib.load("data/tfidf.pkl")                 if os.path.exists("data/tfidf.pkl")                 else None
-top_skills   = joblib.load("data/top_skills.pkl")            if os.path.exists("data/top_skills.pkl")            else None
-country_freq = joblib.load("data/country_freq.pkl")          if os.path.exists("data/country_freq.pkl")          else {}
-
-
+model        = joblib.load("/data/best_model_pipeline.pkl")  if os.path.exists("/data/best_model_pipeline.pkl")  else None
+le           = joblib.load("/data/label_encoder.pkl")         if os.path.exists("/data/label_encoder.pkl")         else None
+oe           = joblib.load("/data/ordinal_encoder.pkl")       if os.path.exists("/data/ordinal_encoder.pkl")       else None
+mlb_skills   = joblib.load("/data/mlb_skills.pkl")            if os.path.exists("/data/mlb_skills.pkl")            else None
+mlb_cat      = joblib.load("/data/mlb_cat.pkl")               if os.path.exists("/data/mlb_cat.pkl")               else None
+tfidf        = joblib.load("/data/tfidf.pkl")                 if os.path.exists("/data/tfidf.pkl")                 else None
+top_skills   = joblib.load("/data/top_skills.pkl")            if os.path.exists("/data/top_skills.pkl")            else None
+country_freq = joblib.load("/data/country_freq.pkl")          if os.path.exists("/data/country_freq.pkl")          else {}
 class JobData(BaseModel):
     job_title:             str
     job_via:               Optional[str]  = "Unknown"
