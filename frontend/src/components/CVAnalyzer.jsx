@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 
 const WEBHOOK_URL = "http://localhost:5678/webhook-test/c9ef6c41-8ef7-443c-8b23-fc72c30a270d";
+// FastAPI `controller.py` from job_recommendation/recommender
+// Run it with:  uvicorn controller:app --reload --port 8000
+const RECOMMENDER_URL = "http://localhost:8000/webhook/cv-recommendations";
 
 const JOB_EMOJIS = {
   "Data Engineer":        "⚙️",
@@ -28,13 +31,15 @@ export default function CVAnalyzer() {
   const [dragging, setDragging]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
+  const [jobMatches, setJobMatches] = useState(null);
+  const [matchWarning, setMatchWarning] = useState(null);
   const [error, setError]         = useState(null);
   const [progress, setProgress]   = useState(0);
   const inputRef = useRef(null);
 
   const handleFile = (f) => {
     if (f && f.type === "application/pdf") {
-      setFile(f); setResult(null); setError(null);
+      setFile(f); setResult(null); setError(null); setJobMatches(null); setMatchWarning(null);
     } else {
       setError("Please upload a PDF file only.");
     }
@@ -45,9 +50,55 @@ export default function CVAnalyzer() {
     handleFile(e.dataTransfer.files[0]);
   };
 
+  // Flatten whatever shape the N8N agent returns into a plain list of skill strings
+  const extractSkillStrings = (parsed) => {
+    const raw =
+      parsed?.top_skills ||
+      parsed?.topSkills  ||
+      parsed?.skills     ||
+      parsed?.matched_skills ||
+      [];
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((s) => {
+        if (typeof s === "string") return s;
+        if (s && typeof s === "object") return s.name || s.skill || s.title || "";
+        return String(s || "");
+      })
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
+
+  const fetchJobMatches = async (skills) => {
+    if (!skills || skills.length === 0) {
+      setMatchWarning("No skills were extracted from the CV, so no jobs could be matched.");
+      return;
+    }
+    try {
+      const res = await fetch(RECOMMENDER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skills, top_n: 5 }),
+      });
+      if (!res.ok) throw new Error(`Recommender error: ${res.status}`);
+      const data = await res.json();
+      setJobMatches(data.recommendations || []);
+    } catch (err) {
+      setMatchWarning(
+        `Could not reach the job recommender (${err.message}). ` +
+        `Make sure controller.py is running on port 8000.`
+      );
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!file) { setError("Please upload your CV first."); return; }
-    setLoading(true); setError(null); setResult(null); setProgress(0);
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setJobMatches(null);
+    setMatchWarning(null);
+    setProgress(0);
 
     const interval = setInterval(() => {
       setProgress((p) => (p < 85 ? p + 5 : p));
@@ -90,6 +141,10 @@ export default function CVAnalyzer() {
       }
 
       setResult(parsed);
+
+      // Step 4: feed the extracted skills into our recommender to get real job matches
+      const skills = extractSkillStrings(parsed);
+      await fetchJobMatches(skills);
     } catch (err) {
       clearInterval(interval);
       setError(`Failed to analyze CV: ${err.message}`);
@@ -99,7 +154,14 @@ export default function CVAnalyzer() {
     }
   };
 
-  const handleReset = () => { setFile(null); setResult(null); setError(null); setProgress(0); };
+  const handleReset = () => {
+    setFile(null);
+    setResult(null);
+    setError(null);
+    setJobMatches(null);
+    setMatchWarning(null);
+    setProgress(0);
+  };
 
   return (
     <div style={{
@@ -197,6 +259,23 @@ export default function CVAnalyzer() {
         </button>
 
         {result && <ResultCard result={result} />}
+
+        {matchWarning && (
+          <div style={{
+            marginTop: 20, padding: "14px 18px", borderRadius: 12,
+            background: "rgba(251,191,36,0.08)",
+            border: "1px solid rgba(251,191,36,0.25)",
+            color: "#fbbf24", fontSize: 13,
+          }}>
+            ⚠️ {matchWarning}
+          </div>
+        )}
+
+        {jobMatches && jobMatches.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <JobMatches matches={jobMatches} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -341,6 +420,138 @@ function ResultCard({ result }) {
           </pre>
         </div>
       )}
+    </div>
+  );
+}
+
+function JobMatches({ matches }) {
+  return (
+    <div style={{
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 18,
+      padding: 28,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#f0f0f0" }}>
+          💼 Matched Jobs From TanitJobs
+        </h3>
+        <span style={{
+          padding: "3px 10px", borderRadius: 20, fontSize: 11,
+          background: "rgba(110,231,183,0.15)", border: "1px solid rgba(110,231,183,0.3)", color: "#6ee7b7",
+        }}>
+          {matches.length} results
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {matches.map((job, i) => {
+          const scorePct = Math.round((job.match_score ?? 0) * 100);
+          const matched  = job.skills_matched || [];
+          const missing  = job.skills_missing || [];
+          return (
+            <div key={i} style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: "16px 18px",
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>{getEmoji(job.job_title || "")}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#e0d8f0", marginBottom: 2 }}>
+                      {job.job_title}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8880a0" }}>
+                      {job.company}{job.location ? ` · ${job.location}` : ""}
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  background: "rgba(102,126,234,0.15)",
+                  border: "1px solid rgba(102,126,234,0.3)",
+                  color: "#a78bfa",
+                  whiteSpace: "nowrap",
+                }}>
+                  {scorePct}% match
+                </span>
+              </div>
+
+              <div style={{
+                width: "100%", height: 5, background: "rgba(255,255,255,0.06)",
+                borderRadius: 10, overflow: "hidden", marginBottom: 12,
+              }}>
+                <div style={{
+                  width: `${scorePct}%`, height: "100%",
+                  background: "linear-gradient(90deg, #667eea, #764ba2)",
+                  borderRadius: 10, transition: "width 0.6s ease",
+                }} />
+              </div>
+
+              {matched.length > 0 && (
+                <div style={{ marginBottom: missing.length ? 8 : 0 }}>
+                  <div style={{ fontSize: 10, color: "#6ee7b7", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+                    ✓ Your matching skills
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {matched.map((s, j) => (
+                      <span key={j} style={{
+                        padding: "2px 9px", borderRadius: 20, fontSize: 10,
+                        background: "rgba(110,231,183,0.12)",
+                        border: "1px solid rgba(110,231,183,0.25)",
+                        color: "#6ee7b7",
+                      }}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {missing.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 10, color: "#fbbf24", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+                    + Skills to learn
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {missing.slice(0, 8).map((s, j) => (
+                      <span key={j} style={{
+                        padding: "2px 9px", borderRadius: 20, fontSize: 10,
+                        background: "rgba(251,191,36,0.1)",
+                        border: "1px solid rgba(251,191,36,0.25)",
+                        color: "#fbbf24",
+                      }}>{s}</span>
+                    ))}
+                    {missing.length > 8 && (
+                      <span style={{ fontSize: 10, color: "#8880a0", alignSelf: "center" }}>
+                        +{missing.length - 8} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {job.link && (
+                <a
+                  href={job.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-block", marginTop: 12,
+                    padding: "8px 16px", borderRadius: 10,
+                    background: "linear-gradient(135deg, #667eea, #764ba2)",
+                    color: "#fff", fontSize: 12, fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 4px 14px rgba(102,126,234,0.3)",
+                  }}
+                >
+                  Apply on TanitJobs →
+                </a>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
