@@ -1,13 +1,11 @@
 # ProjetPython2  Analyse des Offres d’Emploi
 # Team  
-Sallami Arij - Arab Isamhen - Ben mustpha Naoures - Aribi Rayen 
+Aribi Rayen - Dridi Ichrak 
 # Dataset 
 lien : https://huggingface.co/datasets/lukebarousse/data_jobs
 ## Week 1: Setup, Scraping & EDA 
 
 
-
-=======
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -78,4 +76,4 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
->>>>>>> 413cd8c59de53469ffefc11bfa5d7077c0bd6884
+
