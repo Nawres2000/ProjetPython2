@@ -1,0 +1,361 @@
+artifact_path: file:c:/Users/Rayen/Desktop/ProjetPython2/code/mlruns/1/models/m-0e625b58fa3546e6a32ebf8d983af259/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.12
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+is_signature_from_type_hint: false
+mlflow_version: 3.9.0
+model_id: m-0e625b58fa3546e6a32ebf8d983af259
+model_size_bytes: 14641443
+model_uuid: m-0e625b58fa3546e6a32ebf8d983af259
+prompts: null
+run_id: 48338f5d3b614e458800dc29396392b3
+signature:
+  inputs: '[{"type": "long", "name": "job_work_from_home", "required": true}, {"type":
+    "long", "name": "job_no_degree_mention", "required": true}, {"type": "long", "name":
+    "job_health_insurance", "required": true}, {"type": "integer", "name": "posted_year",
+    "required": true}, {"type": "integer", "name": "posted_month", "required": true},
+    {"type": "integer", "name": "posted_day", "required": true}, {"type": "long",
+    "name": "num_skills", "required": true}, {"type": "long", "name": "num_skill_categories",
+    "required": true}, {"type": "double", "name": "country_freq_enc", "required":
+    true}, {"type": "double", "name": "job_via", "required": true}, {"type": "double",
+    "name": "job_schedule_type", "required": true}, {"type": "double", "name": "job_location",
+    "required": true}, {"type": "double", "name": "search_location", "required": true},
+    {"type": "double", "name": "company_name", "required": true}, {"type": "integer",
+    "name": "skill_python", "required": true}, {"type": "integer", "name": "skill_sql",
+    "required": true}, {"type": "integer", "name": "skill_excel", "required": true},
+    {"type": "integer", "name": "skill_aws", "required": true}, {"type": "integer",
+    "name": "skill_azure", "required": true}, {"type": "integer", "name": "skill_r",
+    "required": true}, {"type": "integer", "name": "skill_tableau", "required": true},
+    {"type": "integer", "name": "skill_spark", "required": true}, {"type": "integer",
+    "name": "skill_power bi", "required": true}, {"type": "integer", "name": "skill_java",
+    "required": true}, {"type": "integer", "name": "skill_sas", "required": true},
+    {"type": "integer", "name": "skill_hadoop", "required": true}, {"type": "integer",
+    "name": "skill_scala", "required": true}, {"type": "integer", "name": "skill_snowflake",
+    "required": true}, {"type": "integer", "name": "skill_databricks", "required":
+    true}, {"type": "integer", "name": "skill_gcp", "required": true}, {"type": "integer",
+    "name": "skill_git", "required": true}, {"type": "integer", "name": "skill_kafka",
+    "required": true}, {"type": "integer", "name": "skill_airflow", "required": true},
+    {"type": "integer", "name": "skill_oracle", "required": true}, {"type": "integer",
+    "name": "skill_nosql", "required": true}, {"type": "integer", "name": "skill_docker",
+    "required": true}, {"type": "integer", "name": "skill_sql server", "required":
+    true}, {"type": "integer", "name": "skill_go", "required": true}, {"type": "integer",
+    "name": "skill_kubernetes", "required": true}, {"type": "integer", "name": "skill_mongodb",
+    "required": true}, {"type": "integer", "name": "skill_redshift", "required": true},
+    {"type": "integer", "name": "skill_tensorflow", "required": true}, {"type": "integer",
+    "name": "skill_pyspark", "required": true}, {"type": "integer", "name": "skill_pandas",
+    "required": true}, {"type": "integer", "name": "skill_flow", "required": true},
+    {"type": "integer", "name": "skill_linux", "required": true}, {"type": "integer",
+    "name": "skill_word", "required": true}, {"type": "integer", "name": "skill_sap",
+    "required": true}, {"type": "integer", "name": "skill_powerpoint", "required":
+    true}, {"type": "integer", "name": "skill_pytorch", "required": true}, {"type":
+    "integer", "name": "skill_mysql", "required": true}, {"type": "integer", "name":
+    "skill_javascript", "required": true}, {"type": "integer", "name": "skill_bigquery",
+    "required": true}, {"type": "integer", "name": "skill_jira", "required": true},
+    {"type": "integer", "name": "skill_c++", "required": true}, {"type": "integer",
+    "name": "skill_postgresql", "required": true}, {"type": "integer", "name": "skill_numpy",
+    "required": true}, {"type": "integer", "name": "skill_terraform", "required":
+    true}, {"type": "integer", "name": "skill_scikit-learn", "required": true}, {"type":
+    "integer", "name": "skill_looker", "required": true}, {"type": "integer", "name":
+    "skill_github", "required": true}, {"type": "integer", "name": "skill_jenkins",
+    "required": true}, {"type": "integer", "name": "skill_ssis", "required": true},
+    {"type": "integer", "name": "skill_shell", "required": true}, {"type": "integer",
+    "name": "skill_qlik", "required": true}, {"type": "integer", "name": "skill_c#",
+    "required": true}, {"type": "integer", "name": "skill_c", "required": true}, {"type":
+    "integer", "name": "skill_windows", "required": true}, {"type": "integer", "name":
+    "skill_vba", "required": true}, {"type": "integer", "name": "skill_cassandra",
+    "required": true}, {"type": "integer", "name": "skill_keras", "required": true},
+    {"type": "integer", "name": "skill_alteryx", "required": true}, {"type": "integer",
+    "name": "skill_matlab", "required": true}, {"type": "integer", "name": "skill_unix",
+    "required": true}, {"type": "integer", "name": "skill_confluence", "required":
+    true}, {"type": "integer", "name": "skill_spss", "required": true}, {"type": "integer",
+    "name": "skill_elasticsearch", "required": true}, {"type": "integer", "name":
+    "skill_bash", "required": true}, {"type": "integer", "name": "skill_gitlab", "required":
+    true}, {"type": "integer", "name": "skill_jupyter", "required": true}, {"type":
+    "integer", "name": "skill_ssrs", "required": true}, {"type": "integer", "name":
+    "skill_dax", "required": true}, {"type": "integer", "name": "skill_react", "required":
+    true}, {"type": "integer", "name": "skill_outlook", "required": true}, {"type":
+    "integer", "name": "skill_matplotlib", "required": true}, {"type": "integer",
+    "name": "skill_ruby", "required": true}, {"type": "integer", "name": "skill_sharepoint",
+    "required": true}, {"type": "integer", "name": "skill_t-sql", "required": true},
+    {"type": "integer", "name": "skill_ansible", "required": true}, {"type": "integer",
+    "name": "skill_html", "required": true}, {"type": "integer", "name": "skill_express",
+    "required": true}, {"type": "integer", "name": "skill_spring", "required": true},
+    {"type": "integer", "name": "skill_powershell", "required": true}, {"type": "integer",
+    "name": "skill_gdpr", "required": true}, {"type": "integer", "name": "skill_dynamodb",
+    "required": true}, {"type": "integer", "name": "skill_css", "required": true},
+    {"type": "integer", "name": "skill_redis", "required": true}, {"type": "integer",
+    "name": "skill_sheets", "required": true}, {"type": "integer", "name": "skill_cognos",
+    "required": true}, {"type": "integer", "name": "skill_angular", "required": true},
+    {"type": "integer", "name": "skill_microstrategy", "required": true}, {"type":
+    "integer", "name": "skill_visio", "required": true}, {"type": "integer", "name":
+    "skill_typescript", "required": true}, {"type": "integer", "name": "skill_splunk",
+    "required": true}, {"type": "integer", "name": "skill_bitbucket", "required":
+    true}, {"type": "integer", "name": "skill_flask", "required": true}, {"type":
+    "integer", "name": "skill_perl", "required": true}, {"type": "integer", "name":
+    "skill_db2", "required": true}, {"type": "integer", "name": "skill_mongo", "required":
+    true}, {"type": "integer", "name": "skill_php", "required": true}, {"type": "integer",
+    "name": "skill_plotly", "required": true}, {"type": "integer", "name": "skill_golang",
+    "required": true}, {"type": "integer", "name": "skill_django", "required": true},
+    {"type": "integer", "name": "skill_seaborn", "required": true}, {"type": "integer",
+    "name": "skill_neo4j", "required": true}, {"type": "integer", "name": "skill_chef",
+    "required": true}, {"type": "integer", "name": "skill_spreadsheet", "required":
+    true}, {"type": "integer", "name": "skill_aurora", "required": true}, {"type":
+    "integer", "name": "skill_node.js", "required": true}, {"type": "integer", "name":
+    "skill_vue", "required": true}, {"type": "integer", "name": "skill_ms access",
+    "required": true}, {"type": "integer", "name": "skill_no-sql", "required": true},
+    {"type": "integer", "name": "skill_vmware", "required": true}, {"type": "integer",
+    "name": "skill_graphql", "required": true}, {"type": "integer", "name": "skill_slack",
+    "required": true}, {"type": "integer", "name": "skill_crystal", "required": true},
+    {"type": "integer", "name": "skill_nltk", "required": true}, {"type": "integer",
+    "name": "skill_julia", "required": true}, {"type": "integer", "name": "skill_atlassian",
+    "required": true}, {"type": "integer", "name": "skill_kotlin", "required": true},
+    {"type": "integer", "name": "skill_selenium", "required": true}, {"type": "integer",
+    "name": "skill_fastapi", "required": true}, {"type": "integer", "name": "skill_firebase",
+    "required": true}, {"type": "integer", "name": "skill_visual basic", "required":
+    true}, {"type": "integer", "name": "skill_opencv", "required": true}, {"type":
+    "integer", "name": "skill_yarn", "required": true}, {"type": "integer", "name":
+    "skill_node", "required": true}, {"type": "integer", "name": "skill_rust", "required":
+    true}, {"type": "integer", "name": "skill_assembly", "required": true}, {"type":
+    "integer", "name": "skill_zoom", "required": true}, {"type": "integer", "name":
+    "skill_swift", "required": true}, {"type": "integer", "name": "skill_notion",
+    "required": true}, {"type": "integer", "name": "skill_phoenix", "required": true},
+    {"type": "integer", "name": "skill_puppet", "required": true}, {"type": "integer",
+    "name": "skill_unity", "required": true}, {"type": "integer", "name": "skill_ibm
+    cloud", "required": true}, {"type": "integer", "name": "skill_terminal", "required":
+    true}, {"type": "integer", "name": "skill_jquery", "required": true}, {"type":
+    "integer", "name": "skill_unify", "required": true}, {"type": "integer", "name":
+    "skill_ggplot2", "required": true}, {"type": "integer", "name": "skill_ubuntu",
+    "required": true}, {"type": "integer", "name": "skill_asp.net", "required": true},
+    {"type": "integer", "name": "skill_svn", "required": true}, {"type": "integer",
+    "name": "skill_mxnet", "required": true}, {"type": "integer", "name": "skill_mariadb",
+    "required": true}, {"type": "integer", "name": "skill_planner", "required": true},
+    {"type": "integer", "name": "skill_groovy", "required": true}, {"type": "integer",
+    "name": "skill_hugging face", "required": true}, {"type": "integer", "name": "skill_watson",
+    "required": true}, {"type": "integer", "name": "skill_theano", "required": true},
+    {"type": "integer", "name": "skill_tidyverse", "required": true}, {"type": "integer",
+    "name": "skill_redhat", "required": true}, {"type": "integer", "name": "skill_datarobot",
+    "required": true}, {"type": "integer", "name": "skill_macos", "required": true},
+    {"type": "integer", "name": "skill_openstack", "required": true}, {"type": "integer",
+    "name": "skill_rshiny", "required": true}, {"type": "integer", "name": "skill_microsoft
+    teams", "required": true}, {"type": "integer", "name": "skill_dplyr", "required":
+    true}, {"type": "integer", "name": "skill_centos", "required": true}, {"type":
+    "integer", "name": "skill_react.js", "required": true}, {"type": "integer", "name":
+    "skill_smartsheet", "required": true}, {"type": "integer", "name": "skill_couchbase",
+    "required": true}, {"type": "integer", "name": "skill_vue.js", "required": true},
+    {"type": "integer", "name": "skill_ruby on rails", "required": true}, {"type":
+    "integer", "name": "skill_trello", "required": true}, {"type": "integer", "name":
+    "skill_asana", "required": true}, {"type": "integer", "name": "skill_flutter",
+    "required": true}, {"type": "integer", "name": "skill_vb.net", "required": true},
+    {"type": "integer", "name": "skill_wire", "required": true}, {"type": "integer",
+    "name": "skill_pulumi", "required": true}, {"type": "integer", "name": "skill_solidity",
+    "required": true}, {"type": "integer", "name": "skill_npm", "required": true},
+    {"type": "integer", "name": "skill_colocation", "required": true}, {"type": "integer",
+    "name": "skill_sqlite", "required": true}, {"type": "integer", "name": "skill_sass",
+    "required": true}, {"type": "integer", "name": "skill_cobol", "required": true},
+    {"type": "integer", "name": "skill_laravel", "required": true}, {"type": "integer",
+    "name": "skill_firestore", "required": true}, {"type": "integer", "name": "skill_elixir",
+    "required": true}, {"type": "integer", "name": "skill_debian", "required": true},
+    {"type": "integer", "name": "skill_airtable", "required": true}, {"type": "integer",
+    "name": "skill_clojure", "required": true}, {"type": "integer", "name": "skill_symphony",
+    "required": true}, {"type": "integer", "name": "skill_unreal", "required": true},
+    {"type": "integer", "name": "skill_fortran", "required": true}, {"type": "integer",
+    "name": "skill_arch", "required": true}, {"type": "integer", "name": "skill_digitalocean",
+    "required": true}, {"type": "integer", "name": "skill_haskell", "required": true},
+    {"type": "integer", "name": "skill_codecommit", "required": true}, {"type": "integer",
+    "name": "skill_twilio", "required": true}, {"type": "integer", "name": "skill_dart",
+    "required": true}, {"type": "integer", "name": "skill_webex", "required": true},
+    {"type": "integer", "name": "skill_electron", "required": true}, {"type": "integer",
+    "name": "skill_couchdb", "required": true}, {"type": "integer", "name": "skill_heroku",
+    "required": true}, {"type": "integer", "name": "skill_next.js", "required": true},
+    {"type": "integer", "name": "skill_drupal", "required": true}, {"type": "integer",
+    "name": "skill_apl", "required": true}, {"type": "integer", "name": "skill_lua",
+    "required": true}, {"type": "integer", "name": "skill_asp.net core", "required":
+    true}, {"type": "integer", "name": "skill_monday.com", "required": true}, {"type":
+    "integer", "name": "skill_powerbi", "required": true}, {"type": "integer", "name":
+    "skill_symfony", "required": true}, {"type": "integer", "name": "skill_objective-c",
+    "required": true}, {"type": "integer", "name": "cat_analyst_tools", "required":
+    true}, {"type": "integer", "name": "cat_async", "required": true}, {"type": "integer",
+    "name": "cat_cloud", "required": true}, {"type": "integer", "name": "cat_databases",
+    "required": true}, {"type": "integer", "name": "cat_libraries", "required": true},
+    {"type": "integer", "name": "cat_os", "required": true}, {"type": "integer", "name":
+    "cat_other", "required": true}, {"type": "integer", "name": "cat_programming",
+    "required": true}, {"type": "integer", "name": "cat_sync", "required": true},
+    {"type": "integer", "name": "cat_webframeworks", "required": true}, {"type": "integer",
+    "name": "n_programming", "required": true}, {"type": "integer", "name": "n_analyst_tools",
+    "required": true}, {"type": "integer", "name": "n_cloud", "required": true}, {"type":
+    "integer", "name": "n_libraries", "required": true}, {"type": "integer", "name":
+    "n_other", "required": true}, {"type": "integer", "name": "n_databases", "required":
+    true}, {"type": "integer", "name": "n_os", "required": true}, {"type": "integer",
+    "name": "n_async", "required": true}, {"type": "integer", "name": "n_webframeworks",
+    "required": true}, {"type": "integer", "name": "n_sync", "required": true}, {"type":
+    "float", "name": "title_100", "required": true}, {"type": "float", "name": "title_2023",
+    "required": true}, {"type": "float", "name": "title_ai", "required": true}, {"type":
+    "float", "name": "title_alternance", "required": true}, {"type": "float", "name":
+    "title_analysis", "required": true}, {"type": "float", "name": "title_analyst",
+    "required": true}, {"type": "float", "name": "title_analyst data", "required":
+    true}, {"type": "float", "name": "title_analyst ii", "required": true}, {"type":
+    "float", "name": "title_analyst intern", "required": true}, {"type": "float",
+    "name": "title_analyst remote", "required": true}, {"type": "float", "name": "title_analytics",
+    "required": true}, {"type": "float", "name": "title_analytics engineer", "required":
+    true}, {"type": "float", "name": "title_and", "required": true}, {"type": "float",
+    "name": "title_and analytics", "required": true}, {"type": "float", "name": "title_and
+    data", "required": true}, {"type": "float", "name": "title_architect", "required":
+    true}, {"type": "float", "name": "title_assistant", "required": true}, {"type":
+    "float", "name": "title_associate", "required": true}, {"type": "float", "name":
+    "title_associate data", "required": true}, {"type": "float", "name": "title_at",
+    "required": true}, {"type": "float", "name": "title_aws", "required": true}, {"type":
+    "float", "name": "title_aws data", "required": true}, {"type": "float", "name":
+    "title_azure", "required": true}, {"type": "float", "name": "title_azure data",
+    "required": true}, {"type": "float", "name": "title_backend", "required": true},
+    {"type": "float", "name": "title_bi", "required": true}, {"type": "float", "name":
+    "title_bi analyst", "required": true}, {"type": "float", "name": "title_bi data",
+    "required": true}, {"type": "float", "name": "title_big", "required": true}, {"type":
+    "float", "name": "title_big data", "required": true}, {"type": "float", "name":
+    "title_business", "required": true}, {"type": "float", "name": "title_business
+    analyst", "required": true}, {"type": "float", "name": "title_business data",
+    "required": true}, {"type": "float", "name": "title_business intelligence", "required":
+    true}, {"type": "float", "name": "title_center", "required": true}, {"type": "float",
+    "name": "title_chain", "required": true}, {"type": "float", "name": "title_clearance",
+    "required": true}, {"type": "float", "name": "title_clinical", "required": true},
+    {"type": "float", "name": "title_cloud", "required": true}, {"type": "float",
+    "name": "title_cloud data", "required": true}, {"type": "float", "name": "title_consultant",
+    "required": true}, {"type": "float", "name": "title_consultant data", "required":
+    true}, {"type": "float", "name": "title_contract", "required": true}, {"type":
+    "float", "name": "title_customer", "required": true}, {"type": "float", "name":
+    "title_data", "required": true}, {"type": "float", "name": "title_data analysis",
+    "required": true}, {"type": "float", "name": "title_data analyst", "required":
+    true}, {"type": "float", "name": "title_data analytics", "required": true}, {"type":
+    "float", "name": "title_data and", "required": true}, {"type": "float", "name":
+    "title_data architect", "required": true}, {"type": "float", "name": "title_data
+    center", "required": true}, {"type": "float", "name": "title_data engineer", "required":
+    true}, {"type": "float", "name": "title_data engineering", "required": true},
+    {"type": "float", "name": "title_data governance", "required": true}, {"type":
+    "float", "name": "title_data management", "required": true}, {"type": "float",
+    "name": "title_data platform", "required": true}, {"type": "float", "name": "title_data
+    quality", "required": true}, {"type": "float", "name": "title_data science", "required":
+    true}, {"type": "float", "name": "title_data scientist", "required": true}, {"type":
+    "float", "name": "title_data warehouse", "required": true}, {"type": "float",
+    "name": "title_database", "required": true}, {"type": "float", "name": "title_de",
+    "required": true}, {"type": "float", "name": "title_developer", "required": true},
+    {"type": "float", "name": "title_development", "required": true}, {"type": "float",
+    "name": "title_devops", "required": true}, {"type": "float", "name": "title_devops
+    engineer", "required": true}, {"type": "float", "name": "title_digital", "required":
+    true}, {"type": "float", "name": "title_director", "required": true}, {"type":
+    "float", "name": "title_director data", "required": true}, {"type": "float", "name":
+    "title_en", "required": true}, {"type": "float", "name": "title_engineer", "required":
+    true}, {"type": "float", "name": "title_engineer data", "required": true}, {"type":
+    "float", "name": "title_engineer ii", "required": true}, {"type": "float", "name":
+    "title_engineer python", "required": true}, {"type": "float", "name": "title_engineer
+    remote", "required": true}, {"type": "float", "name": "title_engineer senior",
+    "required": true}, {"type": "float", "name": "title_engineer with", "required":
+    true}, {"type": "float", "name": "title_engineering", "required": true}, {"type":
+    "float", "name": "title_entry", "required": true}, {"type": "float", "name": "title_etl",
+    "required": true}, {"type": "float", "name": "title_experience", "required": true},
+    {"type": "float", "name": "title_expert", "required": true}, {"type": "float",
+    "name": "title_finance", "required": true}, {"type": "float", "name": "title_financial",
+    "required": true}, {"type": "float", "name": "title_financial data", "required":
+    true}, {"type": "float", "name": "title_for", "required": true}, {"type": "float",
+    "name": "title_full", "required": true}, {"type": "float", "name": "title_full
+    time", "required": true}, {"type": "float", "name": "title_gcp", "required": true},
+    {"type": "float", "name": "title_global", "required": true}, {"type": "float",
+    "name": "title_governance", "required": true}, {"type": "float", "name": "title_head",
+    "required": true}, {"type": "float", "name": "title_head of", "required": true},
+    {"type": "float", "name": "title_health", "required": true}, {"type": "float",
+    "name": "title_healthcare", "required": true}, {"type": "float", "name": "title_hiring",
+    "required": true}, {"type": "float", "name": "title_hr", "required": true}, {"type":
+    "float", "name": "title_hybrid", "required": true}, {"type": "float", "name":
+    "title_ii", "required": true}, {"type": "float", "name": "title_iii", "required":
+    true}, {"type": "float", "name": "title_in", "required": true}, {"type": "float",
+    "name": "title_insights", "required": true}, {"type": "float", "name": "title_integration",
+    "required": true}, {"type": "float", "name": "title_intelligence", "required":
+    true}, {"type": "float", "name": "title_intelligence analyst", "required": true},
+    {"type": "float", "name": "title_intern", "required": true}, {"type": "float",
+    "name": "title_internship", "required": true}, {"type": "float", "name": "title_it",
+    "required": true}, {"type": "float", "name": "title_java", "required": true},
+    {"type": "float", "name": "title_job", "required": true}, {"type": "float", "name":
+    "title_job in", "required": true}, {"type": "float", "name": "title_jobs", "required":
+    true}, {"type": "float", "name": "title_jr", "required": true}, {"type": "float",
+    "name": "title_junior", "required": true}, {"type": "float", "name": "title_junior
+    data", "required": true}, {"type": "float", "name": "title_lead", "required":
+    true}, {"type": "float", "name": "title_lead data", "required": true}, {"type":
+    "float", "name": "title_learning", "required": true}, {"type": "float", "name":
+    "title_learning engineer", "required": true}, {"type": "float", "name": "title_level",
+    "required": true}, {"type": "float", "name": "title_machine", "required": true},
+    {"type": "float", "name": "title_machine learning", "required": true}, {"type":
+    "float", "name": "title_management", "required": true}, {"type": "float", "name":
+    "title_manager", "required": true}, {"type": "float", "name": "title_manager data",
+    "required": true}, {"type": "float", "name": "title_market", "required": true},
+    {"type": "float", "name": "title_marketing", "required": true}, {"type": "float",
+    "name": "title_marketing data", "required": true}, {"type": "float", "name": "title_master",
+    "required": true}, {"type": "float", "name": "title_master data", "required":
+    true}, {"type": "float", "name": "title_mid", "required": true}, {"type": "float",
+    "name": "title_ml", "required": true}, {"type": "float", "name": "title_now",
+    "required": true}, {"type": "float", "name": "title_now hiring", "required": true},
+    {"type": "float", "name": "title_of", "required": true}, {"type": "float", "name":
+    "title_of data", "required": true}, {"type": "float", "name": "title_operations",
+    "required": true}, {"type": "float", "name": "title_or", "required": true}, {"type":
+    "float", "name": "title_part", "required": true}, {"type": "float", "name": "title_part
+    time", "required": true}, {"type": "float", "name": "title_performance", "required":
+    true}, {"type": "float", "name": "title_platform", "required": true}, {"type":
+    "float", "name": "title_platform engineer", "required": true}, {"type": "float",
+    "name": "title_power", "required": true}, {"type": "float", "name": "title_power
+    bi", "required": true}, {"type": "float", "name": "title_principal", "required":
+    true}, {"type": "float", "name": "title_principal data", "required": true}, {"type":
+    "float", "name": "title_process", "required": true}, {"type": "float", "name":
+    "title_product", "required": true}, {"type": "float", "name": "title_project",
+    "required": true}, {"type": "float", "name": "title_python", "required": true},
+    {"type": "float", "name": "title_qa", "required": true}, {"type": "float", "name":
+    "title_quality", "required": true}, {"type": "float", "name": "title_remote",
+    "required": true}, {"type": "float", "name": "title_reporting", "required": true},
+    {"type": "float", "name": "title_reporting analyst", "required": true}, {"type":
+    "float", "name": "title_research", "required": true}, {"type": "float", "name":
+    "title_research analyst", "required": true}, {"type": "float", "name": "title_research
+    data", "required": true}, {"type": "float", "name": "title_risk", "required":
+    true}, {"type": "float", "name": "title_sales", "required": true}, {"type": "float",
+    "name": "title_science", "required": true}, {"type": "float", "name": "title_scientist",
+    "required": true}, {"type": "float", "name": "title_scientist data", "required":
+    true}, {"type": "float", "name": "title_scientist remote", "required": true},
+    {"type": "float", "name": "title_scientist senior", "required": true}, {"type":
+    "float", "name": "title_security", "required": true}, {"type": "float", "name":
+    "title_senior", "required": true}, {"type": "float", "name": "title_senior analyst",
+    "required": true}, {"type": "float", "name": "title_senior business", "required":
+    true}, {"type": "float", "name": "title_senior data", "required": true}, {"type":
+    "float", "name": "title_senior manager", "required": true}, {"type": "float",
+    "name": "title_senior software", "required": true}, {"type": "float", "name":
+    "title_services", "required": true}, {"type": "float", "name": "title_snowflake",
+    "required": true}, {"type": "float", "name": "title_software", "required": true},
+    {"type": "float", "name": "title_software engineer", "required": true}, {"type":
+    "float", "name": "title_solutions", "required": true}, {"type": "float", "name":
+    "title_specialist", "required": true}, {"type": "float", "name": "title_sql",
+    "required": true}, {"type": "float", "name": "title_sr", "required": true}, {"type":
+    "float", "name": "title_sr data", "required": true}, {"type": "float", "name":
+    "title_staff", "required": true}, {"type": "float", "name": "title_staff data",
+    "required": true}, {"type": "float", "name": "title_stage", "required": true},
+    {"type": "float", "name": "title_supply", "required": true}, {"type": "float",
+    "name": "title_supply chain", "required": true}, {"type": "float", "name": "title_support",
+    "required": true}, {"type": "float", "name": "title_system", "required": true},
+    {"type": "float", "name": "title_systems", "required": true}, {"type": "float",
+    "name": "title_team", "required": true}, {"type": "float", "name": "title_tech",
+    "required": true}, {"type": "float", "name": "title_technical", "required": true},
+    {"type": "float", "name": "title_technology", "required": true}, {"type": "float",
+    "name": "title_time", "required": true}, {"type": "float", "name": "title_to",
+    "required": true}, {"type": "float", "name": "title_visualization", "required":
+    true}, {"type": "float", "name": "title_warehouse", "required": true}, {"type":
+    "float", "name": "title_with", "required": true}, {"type": "float", "name": "title_work",
+    "required": true}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "int64", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-03-09 13:29:37.805427'
