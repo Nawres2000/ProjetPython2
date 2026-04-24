@@ -13,6 +13,19 @@ services:
     networks:
       - app_network
 
+  recommender:
+    build:
+      context: ./job_recommendation
+      dockerfile: Dockerfile
+    container_name: recommender_app
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./job_recommendation/recommender:/app
+      - ./job_recommendation/job_scrapper:/job_scrapper
+    networks:
+      - app_network
+
   frontend:
     build: ./frontend
     container_name: frontend_app
@@ -20,6 +33,7 @@ services:
       - "3000:80"
     depends_on:
       - fastapi
+      - recommender
     networks:
       - app_network
 

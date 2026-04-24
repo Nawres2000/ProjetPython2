@@ -1,9 +1,13 @@
 import { useState, useRef } from "react";
 
 const WEBHOOK_URL = "http://localhost:5678/webhook-test/c9ef6c41-8ef7-443c-8b23-fc72c30a270d";
-// FastAPI `controller.py` from job_recommendation/recommender
-// Run it with:  uvicorn controller:app --reload --port 8000
-const RECOMMENDER_URL = "http://localhost:8000/webhook/cv-recommendations";
+// Recommender FastAPI (`job_recommendation/recommender/controller.py`).
+//  - In docker: nginx proxies /recommender/ -> http://recommender:8001 (see nginx.conf)
+//  - In `npm start` dev mode: hit the container / local uvicorn directly on :8001
+const RECOMMENDER_URL =
+  process.env.NODE_ENV === "production"
+    ? "/recommender/webhook/cv-recommendations"
+    : "http://localhost:8001/webhook/cv-recommendations";
 
 const JOB_EMOJIS = {
   "Data Engineer":        "⚙️",
