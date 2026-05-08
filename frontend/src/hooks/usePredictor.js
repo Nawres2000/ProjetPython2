@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { predictJobs, checkHealth } from "../services/api";
+import { SKILLS_BY_CATEGORY } from "../constants/filters";
 
 const initialForm = {
   jobVia:          "",
@@ -19,6 +20,14 @@ export function usePredictor() {
   const [error, setError]          = useState(null);
   const [backendOk, setBackendOk]  = useState(null);
 
+  const canonicalSkillMap = useMemo(() => {
+    const map = new Map();
+    Object.values(SKILLS_BY_CATEGORY)
+      .flat()
+      .forEach((skill) => map.set(skill.toLowerCase(), skill));
+    return map;
+  }, []);
+
   useEffect(() => {
     checkHealth().then(setBackendOk);
   }, []);
@@ -33,6 +42,26 @@ export function usePredictor() {
         ? f.skills.filter((s) => s !== skill)
         : [...f.skills, skill],
     }));
+
+  const setSkillsFromProfile = useCallback((profileSkills) => {
+    if (!Array.isArray(profileSkills)) {
+      setForm((f) => ({ ...f, skills: [] }));
+      return;
+    }
+
+    const normalized = profileSkills
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object") return item.name || item.skill || "";
+        return "";
+      })
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map((name) => canonicalSkillMap.get(name.toLowerCase()) || name.toLowerCase())
+      .filter((name, idx, arr) => arr.indexOf(name) === idx);
+
+    setForm((f) => ({ ...f, skills: normalized }));
+  }, [canonicalSkillMap]);
 
   const handlePredict = async () => {
     setLoading(true);
@@ -59,6 +88,6 @@ export function usePredictor() {
 
   return {
     form, results, predictedLabel, loading, error, backendOk,
-    updateField, toggleSkill, handlePredict, reset,
+    updateField, toggleSkill, handlePredict, reset, setSkillsFromProfile,
   };
 }

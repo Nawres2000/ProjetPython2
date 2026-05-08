@@ -16,3 +16,8 @@ imbalanced-learn
 python-multipart
 gdown
 lightgbm
+pymongo[srv]
+passlib[bcrypt]
+python-jose[cryptography]
+bcrypt
+aiofiles

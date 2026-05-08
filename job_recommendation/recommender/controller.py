@@ -164,6 +164,17 @@ async def send_recommendations_response(client_url: Optional[str] = None) -> dic
     }
 
 
+@app.get("/jobs")
+def list_jobs() -> list:
+    """Return all scraped jobs from jobs.json."""
+    import json
+    try:
+        with open(JOBS_JSON_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 # ---------------------------------------------------------------------------
 # Notebook-friendly wrappers
 # ---------------------------------------------------------------------------

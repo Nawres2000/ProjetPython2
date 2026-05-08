@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
@@ -7,7 +9,13 @@ import joblib
 import io
 import os
 import ast
+import shutil
+import uuid
 from typing import Optional
+from datetime import datetime, timedelta
+from pymongo import MongoClient
+import bcrypt as _bcrypt
+from jose import JWTError, jwt
 
 app = FastAPI(title="Job Title Prediction API")
 
@@ -19,6 +27,222 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Auth configuration ─────────────────────────────────────────────────────────
+MONGODB_URI   = os.getenv("MONGODB_URI", "mongodb+srv://dbuser:rayenQ340@cluster0.9fh3r6f.mongodb.net/?appName=Cluster0")
+JWT_SECRET    = os.getenv("JWT_SECRET", "change-me-in-production-use-a-long-random-string")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_H  = 24
+
+_mongo        = MongoClient(MONGODB_URI)
+_db           = _mongo["job_recommender_auth"]
+users_col     = _db["users"]
+
+bearer    = HTTPBearer()
+
+
+class UserRegister(BaseModel):
+    username: str
+    email:    str
+    password: str
+
+
+class UserLogin(BaseModel):
+    email:    str
+    password: str
+
+
+def _hash(pw: str) -> str:
+    return _bcrypt.hashpw(pw.encode(), _bcrypt.gensalt()).decode()
+
+
+def _verify(plain: str, hashed: str) -> bool:
+    return _bcrypt.checkpw(plain.encode(), hashed.encode())
+
+
+def _make_token(email: str, username: str) -> str:
+    payload = {
+        "sub":      email,
+        "username": username,
+        "exp":      datetime.utcnow() + timedelta(hours=JWT_EXPIRY_H),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+@app.post("/auth/register", tags=["auth"])
+def register(body: UserRegister):
+    if users_col.find_one({"email": body.email}):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    users_col.insert_one({
+        "username":   body.username,
+        "email":      body.email,
+        "password":   _hash(body.password),
+        "created_at": datetime.utcnow(),
+    })
+    token = _make_token(body.email, body.username)
+    return {"token": token, "username": body.username, "email": body.email}
+
+
+@app.post("/auth/login", tags=["auth"])
+def login(body: UserLogin):
+    user = users_col.find_one({"email": body.email})
+    if not user or not _verify(body.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = _make_token(user["email"], user["username"])
+    return {"token": token, "username": user["username"], "email": user["email"]}
+
+
+@app.get("/auth/me", tags=["auth"])
+def get_me(creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    try:
+        payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return {"username": payload["username"], "email": payload["sub"]}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+# ── File uploads ───────────────────────────────────────────────────────────────
+UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx"}
+MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def _get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+    try:
+        payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user = users_col.find_one({"email": payload["sub"]})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def _save_upload(file: UploadFile, subfolder: str) -> str:
+    """Save uploaded file to disk, return relative URL path."""
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Only PDF, DOC, DOCX files are allowed")
+    content = file.file.read()
+    if len(content) > MAX_FILE_BYTES:
+        raise HTTPException(status_code=400, detail="File exceeds 5 MB limit")
+    dest_dir = os.path.join(UPLOADS_DIR, subfolder)
+    os.makedirs(dest_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}{ext}"
+    dest_path = os.path.join(dest_dir, filename)
+    with open(dest_path, "wb") as f:
+        f.write(content)
+    return f"/uploads/{subfolder}/{filename}"
+
+
+@app.post("/auth/profile/upload-cv", tags=["profile"])
+async def upload_cv(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(_get_current_user),
+):
+    # Delete old CV file from disk if it exists
+    old_path = current_user.get("cv_path")
+    if old_path:
+        old_full = os.path.join(os.path.dirname(__file__), old_path.lstrip("/"))
+        if os.path.exists(old_full):
+            os.remove(old_full)
+    path = _save_upload(file, "cv")
+    users_col.update_one(
+        {"email": current_user["email"]},
+        {"$set": {"cv_path": path, "cv_filename": file.filename}},
+    )
+    return {"path": path, "filename": file.filename}
+
+
+@app.post("/auth/profile/upload-cover", tags=["profile"])
+async def upload_cover(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(_get_current_user),
+):
+    old_path = current_user.get("cover_path")
+    if old_path:
+        old_full = os.path.join(os.path.dirname(__file__), old_path.lstrip("/"))
+        if os.path.exists(old_full):
+            os.remove(old_full)
+    path = _save_upload(file, "cover")
+    users_col.update_one(
+        {"email": current_user["email"]},
+        {"$set": {"cover_path": path, "cover_filename": file.filename}},
+    )
+    return {"path": path, "filename": file.filename}
+
+
+@app.delete("/auth/profile/upload-cv", tags=["profile"])
+def delete_cv(current_user: dict = Depends(_get_current_user)):
+    old_path = current_user.get("cv_path")
+    if old_path:
+        old_full = os.path.join(os.path.dirname(__file__), old_path.lstrip("/"))
+        if os.path.exists(old_full):
+            os.remove(old_full)
+    users_col.update_one(
+        {"email": current_user["email"]},
+        {"$unset": {"cv_path": "", "cv_filename": ""}},
+    )
+    return {"detail": "CV removed"}
+
+
+@app.delete("/auth/profile/upload-cover", tags=["profile"])
+def delete_cover(current_user: dict = Depends(_get_current_user)):
+    old_path = current_user.get("cover_path")
+    if old_path:
+        old_full = os.path.join(os.path.dirname(__file__), old_path.lstrip("/"))
+        if os.path.exists(old_full):
+            os.remove(old_full)
+    users_col.update_one(
+        {"email": current_user["email"]},
+        {"$unset": {"cover_path": "", "cover_filename": ""}},
+    )
+    return {"detail": "Cover letter removed"}
+
+
+class ProfileUpdate(BaseModel):
+    title:    Optional[str] = None
+    phone:    Optional[str] = None
+    location: Optional[str] = None
+    linkedin: Optional[str] = None
+    bio:      Optional[str] = None
+    skills:   Optional[list] = None
+    educations:  Optional[list] = None
+    experiences: Optional[list] = None
+
+
+@app.get("/auth/profile", tags=["profile"])
+def get_profile(current_user: dict = Depends(_get_current_user)):
+    return {
+        "username":       current_user.get("username"),
+        "email":          current_user.get("email"),
+        "title":          current_user.get("title", ""),
+        "phone":          current_user.get("phone", ""),
+        "location":       current_user.get("location", ""),
+        "linkedin":       current_user.get("linkedin", ""),
+        "bio":            current_user.get("bio", ""),
+        "skills":         current_user.get("skills", []),
+        "educations":     current_user.get("educations", []),
+        "experiences":    current_user.get("experiences", []),
+        "cv_path":        current_user.get("cv_path"),
+        "cv_filename":    current_user.get("cv_filename"),
+        "cover_path":     current_user.get("cover_path"),
+        "cover_filename": current_user.get("cover_filename"),
+    }
+
+
+@app.put("/auth/profile", tags=["profile"])
+def save_profile(body: ProfileUpdate, current_user: dict = Depends(_get_current_user)):
+    update = {k: v for k, v in body.model_dump().items() if v is not None}
+    if update:
+        users_col.update_one({"email": current_user["email"]}, {"$set": update})
+    return {"detail": "Profile saved"}
+
+
+
+# ── ML models ──────────────────────────────────────────────────────────────────
 model        = joblib.load("/data/best_model_pipeline.pkl")  if os.path.exists("/data/best_model_pipeline.pkl")  else None
 le           = joblib.load("/data/label_encoder.pkl")         if os.path.exists("/data/label_encoder.pkl")         else None
 oe           = joblib.load("/data/ordinal_encoder.pkl")       if os.path.exists("/data/ordinal_encoder.pkl")       else None

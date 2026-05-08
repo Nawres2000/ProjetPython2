@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { apiGetProfile } from "../services/api";
 
 const WEBHOOK_URL = "http://localhost:5678/webhook-test/c9ef6c41-8ef7-443c-8b23-fc72c30a270d";
 // Recommender FastAPI (`job_recommendation/recommender/controller.py`).
@@ -23,6 +24,26 @@ const JOB_EMOJIS = {
   "Automation":           "⚡",
 };
 
+const T = {
+  bg: "#0a0a0f",
+  surface: "rgba(255,255,255,0.025)",
+  surfaceAlt: "rgba(255,255,255,0.04)",
+  border: "rgba(255,255,255,0.07)",
+  borderAlt: "rgba(255,255,255,0.1)",
+  text: "#f0ede8",
+  textMuted: "rgba(240,237,232,0.45)",
+  textDim: "rgba(240,237,232,0.35)",
+  purple: "#6c63ff",
+  purpleLight: "#a098ff",
+  purpleDim: "rgba(108,99,255,0.1)",
+  purpleBorder: "rgba(108,99,255,0.25)",
+  teal: "#3ecfb2",
+  tealDim: "rgba(62,207,178,0.1)",
+  tealBorder: "rgba(62,207,178,0.2)",
+  grad: "linear-gradient(135deg, #6c63ff, #3ecfb2)",
+  gradText: "linear-gradient(90deg, #c8c0ff, #3ecfb2)",
+};
+
 function getEmoji(title) {
   for (const [key, emoji] of Object.entries(JOB_EMOJIS)) {
     if (title?.toLowerCase().includes(key.toLowerCase())) return emoji;
@@ -30,8 +51,10 @@ function getEmoji(title) {
   return "🏆";
 }
 
-export default function CVAnalyzer() {
+export default function CVAnalyzer({ user }) {
   const [file, setFile]           = useState(null);
+  const [profileCv, setProfileCv] = useState(null); // { path, filename } from profile
+  const [useProfileCv, setUseProfileCv] = useState(false);
   const [dragging, setDragging]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState(null);
@@ -40,6 +63,19 @@ export default function CVAnalyzer() {
   const [error, setError]         = useState(null);
   const [progress, setProgress]   = useState(0);
   const inputRef = useRef(null);
+
+  // Auto-load CV from profile if user has one saved
+  useEffect(() => {
+    if (!user?.token) return;
+    apiGetProfile(user.token)
+      .then((p) => {
+        if (p.cv_path && p.cv_filename) {
+          setProfileCv({ path: p.cv_path, filename: p.cv_filename });
+          setUseProfileCv(true);
+        }
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line
 
   const handleFile = (f) => {
     if (f && f.type === "application/pdf") {
@@ -96,7 +132,7 @@ export default function CVAnalyzer() {
   };
 
   const handleAnalyze = async () => {
-    if (!file) { setError("Please upload your CV first."); return; }
+    if (!file && !useProfileCv) { setError("Please upload your CV first."); return; }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -109,8 +145,18 @@ export default function CVAnalyzer() {
     }, 300);
 
     try {
+      let cvFile = file;
+
+      // If using profile CV, fetch the file blob from the server
+      if (useProfileCv && !file) {
+        const res = await fetch(`/backend${profileCv.path}`);
+        if (!res.ok) throw new Error("Could not load CV from profile");
+        const blob = await res.blob();
+        cvFile = new File([blob], profileCv.filename, { type: "application/pdf" });
+      }
+
       const formData = new FormData();
-      formData.append("file", file, file.name);
+      formData.append("file", cvFile, cvFile.name);
       formData.append("sessionId", `user-${Date.now()}`);
 
       const response = await fetch(WEBHOOK_URL, { method: "POST", body: formData });
@@ -170,39 +216,66 @@ export default function CVAnalyzer() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
-      fontFamily: "'Segoe UI', sans-serif",
-      color: "#f0f0f0",
+      background: T.bg,
+      fontFamily: "'DM Sans', sans-serif",
+      color: T.text,
       display: "flex", flexDirection: "column", alignItems: "center",
       padding: "60px 24px",
     }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <div style={{
           width: 64, height: 64, borderRadius: 18,
-          background: "linear-gradient(135deg, #667eea, #764ba2)",
+          background: T.grad,
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 30, margin: "0 auto 16px",
-          boxShadow: "0 8px 32px rgba(102,126,234,0.4)",
+          boxShadow: "0 8px 32px rgba(108,99,255,0.35)",
         }}>📄</div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 8px" }}>CV Job Analyzer</h1>
-        <p style={{ color: "#aaa", fontSize: 14, margin: 0 }}>
+        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, letterSpacing: "-0.02em", margin: "0 0 8px", background: T.gradText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>CV Job Analyzer</h1>
+        <p style={{ color: T.textMuted, fontSize: 14, margin: 0 }}>
           Upload your CV and let AI find your best matching job
         </p>
       </div>
 
       <div style={{ width: "100%", maxWidth: 680 }}>
-        {/* Drop Zone */}
+      {/* Profile CV banner */}
+        {profileCv && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: useProfileCv ? T.tealDim : T.surfaceAlt,
+            border: `1px solid ${useProfileCv ? T.tealBorder : T.borderAlt}`,
+            borderRadius: 12, padding: "0.75rem 1.1rem", marginBottom: 16,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+              <span style={{ fontSize: "1.2rem" }}>📎</span>
+              <div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 500, color: useProfileCv ? T.teal : T.textMuted }}>
+                  {useProfileCv ? "Using CV from your profile" : "CV from your profile available"}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: T.textDim }}>{profileCv.filename}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => { setUseProfileCv(!useProfileCv); if (!useProfileCv) setFile(null); }}
+              style={{ background: useProfileCv ? T.surfaceAlt : T.tealDim, border: `1px solid ${useProfileCv ? T.borderAlt : T.tealBorder}`, borderRadius: 8, padding: "0.35rem 0.85rem", color: useProfileCv ? T.textMuted : T.teal, cursor: "pointer", fontSize: "0.78rem" }}>
+              {useProfileCv ? "Use different file" : "Use this CV"}
+            </button>
+          </div>
+        )}
+
+        {/* Drop Zone — hidden when using profile CV */}
+        {!useProfileCv && (
         <div
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           onClick={() => !file && inputRef.current.click()}
           style={{
-            border: `2px dashed ${dragging ? "#a78bfa" : file ? "#6ee7b7" : "rgba(255,255,255,0.15)"}`,
+            border: `2px dashed ${dragging ? T.purpleLight : file ? T.teal : "rgba(255,255,255,0.15)"}`,
             borderRadius: 18, padding: "48px 32px", textAlign: "center",
             cursor: file ? "default" : "pointer",
-            background: dragging ? "rgba(167,139,250,0.08)" : file ? "rgba(110,231,183,0.05)" : "rgba(255,255,255,0.03)",
+            background: dragging ? T.purpleDim : file ? T.tealDim : T.surface,
             transition: "all 0.2s", marginBottom: 20,
           }}
         >
@@ -212,13 +285,13 @@ export default function CVAnalyzer() {
             <>
               <div style={{ fontSize: 48, marginBottom: 12 }}>📂</div>
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Drop your CV here</div>
-              <div style={{ fontSize: 13, color: "#888" }}>or click to browse — PDF only</div>
+              <div style={{ fontSize: 13, color: T.textDim }}>or click to browse - PDF only</div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#6ee7b7", marginBottom: 4 }}>{file.name}</div>
-              <div style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: T.teal, marginBottom: 4 }}>{file.name}</div>
+              <div style={{ fontSize: 12, color: T.textDim, marginBottom: 16 }}>
                 {(file.size / 1024).toFixed(1)} KB · PDF
               </div>
               <button onClick={(e) => { e.stopPropagation(); handleReset(); }} style={{
@@ -229,16 +302,17 @@ export default function CVAnalyzer() {
             </>
           )}
         </div>
+        )} {/* end !useProfileCv */}
 
         {/* Progress Bar */}
         {loading && (
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: "#a78bfa" }}>Analyzing your CV...</span>
-              <span style={{ fontSize: 12, color: "#a78bfa" }}>{progress}%</span>
+              <span style={{ fontSize: 12, color: T.purpleLight }}>Analyzing your CV...</span>
+              <span style={{ fontSize: 12, color: T.purpleLight }}>{progress}%</span>
             </div>
             <div style={{ width: "100%", height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden" }}>
-              <div style={{ width: `${progress}%`, height: "100%", background: "linear-gradient(90deg, #667eea, #764ba2)", borderRadius: 10, transition: "width 0.3s ease" }} />
+              <div style={{ width: `${progress}%`, height: "100%", background: T.grad, borderRadius: 10, transition: "width 0.3s ease" }} />
             </div>
           </div>
         )}
@@ -251,13 +325,13 @@ export default function CVAnalyzer() {
         )}
 
         {/* Analyze Button */}
-        <button onClick={handleAnalyze} disabled={loading || !file} style={{
+        <button onClick={handleAnalyze} disabled={loading || (!file && !useProfileCv)} style={{
           width: "100%", padding: "16px", borderRadius: 12,
-          background: "linear-gradient(135deg, #667eea, #764ba2)",
+          background: T.grad,
           border: "none", color: "#fff", fontWeight: 700, fontSize: 16,
-          cursor: (loading || !file) ? "not-allowed" : "pointer",
+          cursor: (loading || (!file && !useProfileCv)) ? "not-allowed" : "pointer",
           letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(102,126,234,0.4)",
-          opacity: (loading || !file) ? 0.6 : 1, transition: "all 0.2s", marginBottom: 32,
+          opacity: (loading || (!file && !useProfileCv)) ? 0.6 : 1, transition: "all 0.2s", marginBottom: 32,
         }}>
           {loading ? "⏳ Analyzing..." : "🚀 Analyze My CV"}
         </button>
@@ -302,14 +376,14 @@ function ResultCard({ result }) {
   const isRaw   = !bestJob && !allJobs && !skills.length && !careerAdvice;
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 28 }}>
+    <div style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 18, padding: 28 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#f0f0f0" }}>🎯 Analysis Results</h3>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.text }}>🎯 Analysis Results</h3>
         {(candidateName || expLevel) && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {candidateName && <span style={{ fontSize: 13, color: "#ccc" }}>{candidateName}</span>}
+            {candidateName && <span style={{ fontSize: 13, color: T.textMuted }}>{candidateName}</span>}
             {expLevel && (
-              <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, background: "rgba(102,126,234,0.2)", border: "1px solid rgba(102,126,234,0.3)", color: "#a78bfa" }}>
+              <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>
                 {expLevel}
               </span>
             )}
@@ -320,24 +394,24 @@ function ResultCard({ result }) {
       {/* Best Job Hero Card */}
       {bestJob && (
         <div style={{
-          background: "linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2))",
-          border: "1px solid rgba(167,139,250,0.3)",
+          background: "linear-gradient(135deg, rgba(108,99,255,0.18), rgba(62,207,178,0.14))",
+          border: `1px solid ${T.purpleBorder}`,
           borderRadius: 14, padding: "20px 24px", marginBottom: 20,
         }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
             <div style={{ fontSize: 44, flexShrink: 0 }}>{getEmoji(bestJob)}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+              <div style={{ fontSize: 11, color: T.purpleLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
                 Best Match Role
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#f0f0f0", marginBottom: 4 }}>{bestJob}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 4 }}>{bestJob}</div>
               {bestSalary && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "rgba(110,231,183,0.1)", border: "1px solid rgba(110,231,183,0.2)", marginBottom: bestExp ? 10 : 0 }}>
-                  <span style={{ fontSize: 13, color: "#6ee7b7" }}>💰 {bestSalary}</span>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: T.tealDim, border: `1px solid ${T.tealBorder}`, marginBottom: bestExp ? 10 : 0 }}>
+                  <span style={{ fontSize: 13, color: T.teal }}>💰 {bestSalary}</span>
                 </div>
               )}
               {bestExp && (
-                <p style={{ margin: bestSalary ? "8px 0 0" : "4px 0 0", fontSize: 13, color: "#b0a8c8", lineHeight: 1.6 }}>{bestExp}</p>
+                <p style={{ margin: bestSalary ? "8px 0 0" : "4px 0 0", fontSize: 13, color: T.textMuted, lineHeight: 1.6 }}>{bestExp}</p>
               )}
             </div>
           </div>
@@ -347,7 +421,7 @@ function ResultCard({ result }) {
       {/* All Jobs */}
       {allJobs && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "#888", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
             All Matched Roles
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -359,26 +433,26 @@ function ResultCard({ result }) {
               const barWidth  = Math.max(95 - i * 12, 35);
 
               return (
-                <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
+                <div key={i} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 20 }}>{getEmoji(jobName)}</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "#e0d8f0" }}>{jobName}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{jobName}</span>
                     </div>
                     {salary && (
-                      <span style={{ fontSize: 12, color: "#6ee7b7", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 12, color: T.teal, fontWeight: 600, whiteSpace: "nowrap" }}>
                         💰 {salary}
                       </span>
                     )}
                   </div>
                   <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 10, overflow: "hidden", marginBottom: exp || skillsDev.length ? 10 : 0 }}>
-                    <div style={{ width: `${barWidth}%`, height: "100%", background: "linear-gradient(90deg, #667eea, #764ba2)", borderRadius: 10, transition: "width 0.6s ease" }} />
+                    <div style={{ width: `${barWidth}%`, height: "100%", background: T.grad, borderRadius: 10, transition: "width 0.6s ease" }} />
                   </div>
-                  {exp && <p style={{ margin: "0 0 8px", fontSize: 12, color: "#8880a0", lineHeight: 1.6 }}>{exp}</p>}
+                  {exp && <p style={{ margin: "0 0 8px", fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>{exp}</p>}
                   {skillsDev.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {skillsDev.map((s, j) => (
-                        <span key={j} style={{ padding: "2px 9px", borderRadius: 20, fontSize: 10, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa" }}>+ {s}</span>
+                        <span key={j} style={{ padding: "2px 9px", borderRadius: 20, fontSize: 10, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>+ {s}</span>
                       ))}
                     </div>
                   )}
@@ -392,12 +466,12 @@ function ResultCard({ result }) {
       {/* Top Skills */}
       {skills.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "#888", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
             🛠️ Skills Detected
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {skills.map((skill, i) => (
-              <span key={i} style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, background: "rgba(96,165,250,0.15)", border: "1px solid rgba(96,165,250,0.3)", color: "#60a5fa" }}>{skill}</span>
+              <span key={i} style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>{skill}</span>
             ))}
           </div>
         </div>
@@ -405,21 +479,21 @@ function ResultCard({ result }) {
 
       {/* Career Advice */}
       {careerAdvice && (
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ fontSize: 12, color: "#888", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px" }}>
+          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
             📝 Career Advice
           </div>
-          <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.8 }}>{careerAdvice}</div>
+          <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.8 }}>{careerAdvice}</div>
         </div>
       )}
 
       {/* Fallback raw */}
       {isRaw && (
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" }}>
           <div style={{ fontSize: 12, color: "#e87885", marginBottom: 8, fontWeight: 600 }}>
-            ⚠️ Unexpected response format — update your n8n AI Agent prompt to return JSON only.
+            ⚠️ Unexpected response format - update your n8n AI Agent prompt to return JSON only.
           </div>
-          <pre style={{ fontSize: 11, color: "#888", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 300, overflow: "auto" }}>
+          <pre style={{ fontSize: 11, color: T.textDim, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 300, overflow: "auto" }}>
             {typeof result.raw === "string" ? result.raw : JSON.stringify(result, null, 2)}
           </pre>
         </div>
@@ -431,18 +505,18 @@ function ResultCard({ result }) {
 function JobMatches({ matches }) {
   return (
     <div style={{
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
+      background: T.surfaceAlt,
+      border: `1px solid ${T.border}`,
       borderRadius: 18,
       padding: 28,
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#f0f0f0" }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.text }}>
           💼 Matched Jobs From TanitJobs
         </h3>
         <span style={{
           padding: "3px 10px", borderRadius: 20, fontSize: 11,
-          background: "rgba(110,231,183,0.15)", border: "1px solid rgba(110,231,183,0.3)", color: "#6ee7b7",
+          background: T.tealDim, border: `1px solid ${T.tealBorder}`, color: T.teal,
         }}>
           {matches.length} results
         </span>
@@ -455,8 +529,8 @@ function JobMatches({ matches }) {
           const missing  = job.skills_missing || [];
           return (
             <div key={i} style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: T.surface,
+              border: `1px solid ${T.border}`,
               borderRadius: 12,
               padding: "16px 18px",
             }}>
@@ -464,19 +538,19 @@ function JobMatches({ matches }) {
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 22, flexShrink: 0 }}>{getEmoji(job.job_title || "")}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#e0d8f0", marginBottom: 2 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>
                       {job.job_title}
                     </div>
-                    <div style={{ fontSize: 12, color: "#8880a0" }}>
+                    <div style={{ fontSize: 12, color: T.textMuted }}>
                       {job.company}{job.location ? ` · ${job.location}` : ""}
                     </div>
                   </div>
                 </div>
                 <span style={{
                   padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                  background: "rgba(102,126,234,0.15)",
-                  border: "1px solid rgba(102,126,234,0.3)",
-                  color: "#a78bfa",
+                  background: T.purpleDim,
+                  border: `1px solid ${T.purpleBorder}`,
+                  color: T.purpleLight,
                   whiteSpace: "nowrap",
                 }}>
                   {scorePct}% match
@@ -489,23 +563,23 @@ function JobMatches({ matches }) {
               }}>
                 <div style={{
                   width: `${scorePct}%`, height: "100%",
-                  background: "linear-gradient(90deg, #667eea, #764ba2)",
+                  background: T.grad,
                   borderRadius: 10, transition: "width 0.6s ease",
                 }} />
               </div>
 
               {matched.length > 0 && (
                 <div style={{ marginBottom: missing.length ? 8 : 0 }}>
-                  <div style={{ fontSize: 10, color: "#6ee7b7", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
+                  <div style={{ fontSize: 10, color: T.teal, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
                     ✓ Your matching skills
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                     {matched.map((s, j) => (
                       <span key={j} style={{
                         padding: "2px 9px", borderRadius: 20, fontSize: 10,
-                        background: "rgba(110,231,183,0.12)",
-                        border: "1px solid rgba(110,231,183,0.25)",
-                        color: "#6ee7b7",
+                        background: T.tealDim,
+                        border: `1px solid ${T.tealBorder}`,
+                        color: T.teal,
                       }}>{s}</span>
                     ))}
                   </div>
@@ -527,7 +601,7 @@ function JobMatches({ matches }) {
                       }}>{s}</span>
                     ))}
                     {missing.length > 8 && (
-                      <span style={{ fontSize: 10, color: "#8880a0", alignSelf: "center" }}>
+                      <span style={{ fontSize: 10, color: T.textMuted, alignSelf: "center" }}>
                         +{missing.length - 8} more
                       </span>
                     )}
@@ -543,10 +617,10 @@ function JobMatches({ matches }) {
                   style={{
                     display: "inline-block", marginTop: 12,
                     padding: "8px 16px", borderRadius: 10,
-                    background: "linear-gradient(135deg, #667eea, #764ba2)",
+                    background: T.grad,
                     color: "#fff", fontSize: 12, fontWeight: 600,
                     textDecoration: "none",
-                    boxShadow: "0 4px 14px rgba(102,126,234,0.3)",
+                    boxShadow: "0 4px 14px rgba(108,99,255,0.3)",
                   }}
                 >
                   Apply on TanitJobs →

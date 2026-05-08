@@ -1,4 +1,92 @@
 const API_URL = "/backend";
+
+// ── Auth helpers ──────────────────────────────────────────────────────────────
+export async function apiRegister(username, email, password) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Registration failed");
+  return data; // { token, username, email }
+}
+
+export async function apiLogin(email, password) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Login failed");
+  return data; // { token, username, email }
+}
+
+// ── Profile helpers ───────────────────────────────────────────────────────────
+export async function apiGetProfile(token) {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to load profile");
+  return data;
+}
+
+export async function apiSaveProfile(token, profile) {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(profile),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to save profile");
+  return data;
+}
+
+export async function apiUploadCV(token, file) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/auth/profile/upload-cv`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "CV upload failed");
+  return data; // { path, filename }
+}
+
+export async function apiUploadCover(token, file) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/auth/profile/upload-cover`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Cover letter upload failed");
+  return data; // { path, filename }
+}
+
+export async function apiDeleteCV(token) {
+  const res = await fetch(`${API_URL}/auth/profile/upload-cv`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to remove CV");
+}
+
+export async function apiDeleteCover(token) {
+  const res = await fetch(`${API_URL}/auth/profile/upload-cover`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to remove cover letter");
+}
+
+
 /**
  * Builds a job-title-like string based on which skill category
  * the user selected the most from — feeds TF-IDF with real signal
