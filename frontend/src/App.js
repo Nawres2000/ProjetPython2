@@ -1,229 +1,49 @@
 import { useState, useEffect } from "react";
-import Header        from "./components/Header";
-import StatsRow      from "./components/StatsRow";
-import InputPanel    from "./components/InputPanel";
-import ResultsPanel  from "./components/ResultsPanel";
-import CVAnalyzer    from "./components/CVAnalyzer";
-import SignIn        from "./components/SignIn";
-import SignUp        from "./components/SignUp";
-import HomePage      from "./components/HomePage";
-import ProfilePage   from "./components/ProfilePage";
-import JobsPage      from "./components/JobsPage";
-import { usePredictor } from "./hooks/usePredictor";
+import Header       from "./components/Header";
+import StatsRow     from "./components/StatsRow";
+import InputPanel   from "./components/InputPanel";
+import ResultsPanel from "./components/ResultsPanel";
+import CVAnalyzer   from "./components/CVAnalyzer";
+import SignIn       from "./components/SignIn";
+import SignUp       from "./components/SignUp";
+import HomePage     from "./components/HomePage";
+import ProfilePage  from "./components/ProfilePage";
+import JobsPage     from "./components/JobsPage";
+import { usePredictor }  from "./hooks/usePredictor";
 import { apiGetProfile } from "./services/api";
 
-/* ─── Design tokens matching SkillPath theme ─────────────────────────────── */
-const theme = {
-  bg:           "#0a0a0f",
-  surface:      "rgba(255,255,255,0.025)",
-  surfaceHover: "rgba(255,255,255,0.045)",
-  border:       "rgba(255,255,255,0.07)",
-  borderHover:  "rgba(108,99,255,0.3)",
-  text:         "#f0ede8",
-  textMuted:    "rgba(240,237,232,0.45)",
-  textDim:      "rgba(240,237,232,0.25)",
-  purple:       "#6c63ff",
-  purpleLight:  "#a098ff",
-  teal:         "#3ecfb2",
-  gradientPrimary: "linear-gradient(135deg, #6c63ff, #3ecfb2)",
-  fontSans:     "'DM Sans', sans-serif",
-  fontDisplay:  "'Syne', sans-serif",
-};
-
-/* ─── Global styles injected once ───────────────────────────────────────── */
+/* ─── Global styles ─────────────────────────────────────────────────────── */
 const GlobalStyles = () => (
   <>
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <style>{`
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       body {
-        background: ${theme.bg};
-        color: ${theme.text};
-        font-family: ${theme.fontSans};
+        background: #fafaf9;
+        color: #1a1814;
+        font-family: 'DM Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      ::placeholder { color: rgba(240,237,232,0.22) !important; }
+      ::placeholder { color: rgba(26,24,20,0.25) !important; }
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb { background: #e2ddd6; border-radius: 4px; }
       @keyframes fadeUp {
         from { opacity: 0; transform: translateY(14px); }
-        to   { opacity: 1; transform: translateY(0);    }
+        to   { opacity: 1; transform: translateY(0); }
       }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      .skillpath-fade { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .sp-fade { animation: fadeUp 0.42s cubic-bezier(0.16,1,0.3,1) both; }
+      .sp-fade-d1 { animation-delay: 0.06s; }
+      .sp-fade-d2 { animation-delay: 0.12s; }
     `}</style>
   </>
 );
 
-/* ─── Shared layout wrapper for authenticated pages ─────────────────────── */
-function AppShell({ children, backendOk, user, onHome, onLogout, onProfile, onJobs }) {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: theme.bg,
-      fontFamily: theme.fontSans,
-      color: theme.text,
-      paddingBottom: 80,
-    }}>
-      <GlobalStyles />
-
-      {/* ── Sticky nav ── */}
-      <nav style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "1.1rem 2.5rem",
-        borderBottom: `1px solid ${theme.border}`,
-        position: "sticky",
-        top: 0,
-        background: "rgba(10,10,15,0.88)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        zIndex: 100,
-      }}>
-        {/* Logo */}
-        <div
-          onClick={onHome}
-          style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
-        >
-          <div style={{
-            width: 32, height: 32,
-            background: theme.gradientPrimary,
-            borderRadius: 8,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8h10M8 3l5 5-5 5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <span style={{
-            fontFamily: theme.fontDisplay,
-            fontWeight: 800,
-            fontSize: "1.05rem",
-            background: "linear-gradient(90deg, #c8c0ff, #3ecfb2)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}>
-            SkillPath
-          </span>
-        </div>
-
-        {/* Nav links */}
-        <div style={{ display: "flex", gap: "0.35rem" }}>
-          {[
-            { label: "Jobs",    action: onJobs    },
-            { label: "Profile", action: onProfile },
-          ].map(({ label, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              style={{
-                background: "transparent",
-                border: "none",
-                borderRadius: 8,
-                padding: "0.35rem 0.85rem",
-                color: theme.textMuted,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                fontFamily: theme.fontSans,
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = theme.text}
-              onMouseLeave={e => e.currentTarget.style.color = theme.textMuted}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* User + actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {/* Backend status pill */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "0.4rem",
-            background: backendOk ? "rgba(62,207,178,0.08)" : "rgba(220,60,60,0.08)",
-            border: `1px solid ${backendOk ? "rgba(62,207,178,0.2)" : "rgba(220,60,60,0.2)"}`,
-            borderRadius: 100,
-            padding: "0.25rem 0.75rem",
-          }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: backendOk ? theme.teal : "#e03c3c",
-            }} />
-            <span style={{ fontSize: "0.72rem", color: backendOk ? theme.teal : "#e06060" }}>
-              {backendOk ? "API connected" : "API offline"}
-            </span>
-          </div>
-
-          {/* Username chip */}
-          {user && (
-            <div style={{
-              fontSize: "0.8rem",
-              color: theme.textMuted,
-              background: theme.surface,
-              border: `1px solid ${theme.border}`,
-              borderRadius: 8,
-              padding: "0.35rem 0.8rem",
-            }}>
-              {user.username}
-            </div>
-          )}
-
-          {/* Logout */}
-          <button
-            onClick={onLogout}
-            style={{
-              background: "transparent",
-              border: `1px solid ${theme.border}`,
-              borderRadius: 8,
-              padding: "0.45rem 1rem",
-              color: theme.textMuted,
-              fontSize: "0.83rem",
-              cursor: "pointer",
-              fontFamily: theme.fontSans,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = "rgba(220,60,60,0.35)";
-              e.currentTarget.style.color = "#e06060";
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = theme.border;
-              e.currentTarget.style.color = theme.textMuted;
-            }}
-          >
-            Log out
-          </button>
-        </div>
-      </nav>
-
-      {children}
-    </div>
-  );
-}
-
-/* ─── Section label ─────────────────────────────────────────────────────── */
-function SectionLabel({ children }) {
-  return (
-    <div style={{
-      fontSize: "0.7rem",
-      color: theme.textDim,
-      letterSpacing: "0.07em",
-      fontWeight: 500,
-      marginBottom: "0.6rem",
-    }}>
-      {children}
-    </div>
-  );
-}
-
-/* ─── Auth token persistence ─────────────────────────────────────────────── */
+/* ─── Auth token helpers ─────────────────────────────────────────────────── */
 function getStoredUser() {
   const token    = localStorage.getItem("auth_token");
   const username = localStorage.getItem("auth_username");
@@ -231,29 +51,206 @@ function getStoredUser() {
   return token ? { token, username, email } : null;
 }
 
+/* ─── Shared app shell (authenticated pages) ─────────────────────────────── */
+const SHELL_CSS = `
+  .shell {
+    min-height: 100vh;
+    background: #fafaf9;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: #1a1814;
+    padding-bottom: 80px;
+  }
+
+  /* ── Page header band ── */
+  .shell-hero {
+    border-bottom: 1px solid #e2ddd6;
+    background: #ffffff;
+    padding: 40px 48px 36px;
+  }
+  .shell-hero-inner { max-width: 1100px; margin: 0 auto; }
+
+  .shell-kicker {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .shell-kicker-line { width: 28px; height: 2px; background: #c8490a; border-radius: 1px; }
+  .shell-kicker-text {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #c8490a; font-weight: 500;
+  }
+
+  .shell-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 400; line-height: 1.1; letter-spacing: -0.02em;
+    color: #1a1814; margin-bottom: 6px;
+  }
+  .shell-title em { font-style: italic; color: #c8490a; }
+  .shell-title strong {
+    font-style: italic; font-weight: 400;
+    background: linear-gradient(90deg, #c8490a, #0d6e64);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .shell-subtitle {
+    font-size: 14px; color: rgba(26,24,20,0.6);
+    line-height: 1.6; font-weight: 300;
+  }
+
+  /* ── Tab bar ── */
+  .shell-tabs {
+    max-width: 1100px; margin: 0 auto;
+    padding: 0 48px;
+    display: flex; gap: 0;
+    border-bottom: 1px solid #e2ddd6;
+    background: #ffffff;
+  }
+  .shell-tab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 14px 20px;
+    background: transparent; border: none;
+    font-size: 13.5px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+    color: rgba(26,24,20,0.4); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .shell-tab:hover { color: #1a1814; }
+  .shell-tab.active { color: #c8490a; border-bottom-color: #c8490a; }
+  .shell-tab-icon { font-size: 15px; }
+
+  /* ── Content area ── */
+  .shell-content {
+    max-width: 1100px; margin: 0 auto;
+    padding: 36px 48px 0;
+  }
+
+  /* ── Panel cards ── */
+  .panel-card {
+    background: #ffffff;
+    border: 1px solid #e2ddd6;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .panel-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #c8490a, #0d6e64);
+  }
+  .panel-card:hover {
+    border-color: #ccc7bf;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.09), 0 2px 6px rgba(0,0,0,0.04);
+  }
+
+  .panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 24px 16px;
+    border-bottom: 1px solid #e2ddd6;
+    margin-top: 3px;
+  }
+  .panel-header-icon { font-size: 16px; }
+  .panel-header-title {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(26,24,20,0.45);
+  }
+  .panel-header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  .panel-body { padding: 24px; }
+
+  /* Loading spinner */
+  .panel-spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #e2ddd6; border-top-color: #c8490a;
+    animation: spin 0.75s linear infinite; flex-shrink: 0;
+  }
+
+  /* AI badge */
+  .ai-badge {
+    padding: 3px 10px; border-radius: 100px;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    background: rgba(13,110,100,0.08); border: 1px solid rgba(13,110,100,0.2);
+    color: #0d6e64;
+  }
+
+  /* Predictor grid */
+  .predictor-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  }
+`;
+
+function AppShell({ children, backendOk, user, onHome, onLogout, onProfile, onJobs, activeTab, setActiveTab }) {
+  return (
+    <div className="shell">
+      <style>{SHELL_CSS}</style>
+
+      {/* Sticky nav via shared Header component */}
+      <Header
+        backendOk={backendOk}
+        user={user}
+        onHome={onHome}
+        onLogout={onLogout}
+        onProfile={onProfile}
+        onJobs={onJobs}
+      />
+
+      {/* Page hero */}
+      <div className="shell-hero">
+        <div className="shell-hero-inner">
+          <div className="shell-kicker">
+            <span className="shell-kicker-line" />
+            <span className="shell-kicker-text">AI-Powered Tools</span>
+          </div>
+          <h1 className="shell-title">
+            Welcome back, <strong>{user?.username}</strong>
+          </h1>
+          <p className="shell-subtitle">
+            Predict your ideal role or let our AI analyze your CV.
+          </p>
+        </div>
+      </div>
+
+      {/* Tab bar */}
+      <div className="shell-tabs">
+        {[
+          { key: "predictor", icon: "⚡", label: "Job Predictor" },
+          { key: "cv",        icon: "📄", label: "CV Analyzer"   },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            className={`shell-tab${activeTab === tab.key ? " active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            <span className="shell-tab-icon">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN APP
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function App() {
-  const [user, setUser]           = useState(getStoredUser);
-  const [page, setPage]           = useState("home");
-  const [activeTab, setActiveTab] = useState("predictor");
+  const [user,        setUser]        = useState(getStoredUser);
+  const [page,        setPage]        = useState("home");
+  const [activeTab,   setActiveTab]   = useState("predictor");
   const [authChecked, setAuthChecked] = useState(false);
 
-  /* ── Verify stored token on load ───────────────────────────────────────── */
+  /* ── Verify stored token ── */
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     if (!token) { setAuthChecked(true); return; }
-
-    fetch("/backend/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch("/backend/auth/me", { headers: { Authorization: `Bearer ${token}` } })
       .then(res => { if (!res.ok) throw new Error("invalid"); return res.json(); })
       .then(data => setUser({ token, username: data.username, email: data.email }))
       .catch(() => {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_username");
-        localStorage.removeItem("auth_email");
+        ["auth_token", "auth_username", "auth_email"].forEach(k => localStorage.removeItem(k));
         setUser(null);
       })
       .finally(() => setAuthChecked(true));
@@ -264,14 +261,12 @@ export default function App() {
     updateField, toggleSkill, handlePredict, setSkillsFromProfile,
   } = usePredictor();
 
-  /* — Sync profile skills to predictor when entering the app view — */
+  /* ── Sync profile skills when entering app ── */
   useEffect(() => {
     if (!user?.token || page !== "app") return;
     apiGetProfile(user.token)
-      .then((profile) => {
-        if (profile.skills && Array.isArray(profile.skills)) {
-          setSkillsFromProfile(profile.skills);
-        }
+      .then(profile => {
+        if (Array.isArray(profile.skills)) setSkillsFromProfile(profile.skills);
       })
       .catch(() => {});
   }, [user?.token, page, setSkillsFromProfile]);
@@ -279,323 +274,103 @@ export default function App() {
   if (!authChecked) return null;
 
   function handleAuthSuccess(data) { setUser(data); setPage("app"); }
-
   function handleLogout() {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_username");
-    localStorage.removeItem("auth_email");
-    setUser(null);
-    setPage("home");
+    ["auth_token", "auth_username", "auth_email"].forEach(k => localStorage.removeItem(k));
+    setUser(null); setPage("home");
   }
 
-  /* ── Page routing ───────────────────────────────────────────────────────── */
-  if (page === "home") {
-    return (
-      <>
-        <GlobalStyles />
-        <HomePage
-          onSignIn={() => setPage("signin")}
-          onSignUp={() => setPage("signup")}
-          onGoToApp={user ? () => setPage("app") : null}
-          user={user}
-        />
-      </>
-    );
-  }
-
-  if (page === "signin") {
-    return (
-      <>
-        <GlobalStyles />
-        <SignIn
-          onSuccess={handleAuthSuccess}
-          onSwitchToSignUp={() => setPage("signup")}
-        />
-      </>
-    );
-  }
-
-  if (page === "signup") {
-    return (
-      <>
-        <GlobalStyles />
-        <SignUp
-          onSuccess={handleAuthSuccess}
-          onSwitchToSignIn={() => setPage("signin")}
-        />
-      </>
-    );
-  }
-
-  if (page === "profile") {
-    return (
-      <>
-        <GlobalStyles />
-        <ProfilePage user={user} onBack={() => setPage("app")} />
-      </>
-    );
-  }
-
-  if (page === "jobs") {
-    return (
-      <>
-        <GlobalStyles />
-        <JobsPage onBack={() => setPage("app")} />
-      </>
-    );
-  }
+  /* ── Unauthenticated pages ── */
+  if (page === "home")    return <><GlobalStyles /><HomePage    onSignIn={() => setPage("signin")} onSignUp={() => setPage("signup")} onGoToApp={user ? () => setPage("app") : null} user={user} /></>;
+  if (page === "signin")  return <><GlobalStyles /><SignIn  onSuccess={handleAuthSuccess} onSwitchToSignUp={() => setPage("signup")} /></>;
+  if (page === "signup")  return <><GlobalStyles /><SignUp  onSuccess={handleAuthSuccess} onSwitchToSignIn={() => setPage("signin")} /></>;
+  if (page === "profile") return <><GlobalStyles /><ProfilePage user={user} onBack={() => setPage("app")} /></>;
+  if (page === "jobs")    return <><GlobalStyles /><JobsPage    onBack={() => setPage("app")} /></>;
 
   if (!user) { setPage("home"); return null; }
 
-  /* ── Authenticated main app ─────────────────────────────────────────────── */
+  /* ── Authenticated app ── */
   return (
-    <AppShell
-      backendOk={backendOk}
-      user={user}
-      onHome={() => setPage("home")}
-      onLogout={handleLogout}
-      onProfile={() => setPage("profile")}
-      onJobs={() => setPage("jobs")}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "2rem 2rem 0" }}>
+    <>
+      <GlobalStyles />
+      <AppShell
+        backendOk={backendOk}
+        user={user}
+        onHome={() => setPage("home")}
+        onLogout={handleLogout}
+        onProfile={() => setPage("profile")}
+        onJobs={() => setPage("jobs")}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      >
+        <div className="shell-content">
 
-        {/* ── Page title ── */}
-        <div style={{ marginBottom: "1.75rem" }}>
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            background: "rgba(108,99,255,0.08)",
-            border: "1px solid rgba(108,99,255,0.2)",
-            borderRadius: 100,
-            padding: "0.3rem 0.9rem",
-            marginBottom: "0.75rem",
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.teal, display: "inline-block" }} />
-            <span style={{ fontSize: "0.72rem", color: theme.teal, letterSpacing: "0.05em", fontWeight: 500 }}>
-              AI-POWERED TOOLS
-            </span>
-          </div>
-          <h1 style={{
-            fontFamily: theme.fontDisplay,
-            fontSize: "clamp(1.6rem, 3vw, 2.2rem)",
-            fontWeight: 800,
-            letterSpacing: "-0.03em",
-            color: theme.text,
-            lineHeight: 1.15,
-          }}>
-            Welcome back,{" "}
-            <span style={{
-              background: theme.gradientPrimary,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}>
-              {user.username}
-            </span>
-          </h1>
-          <p style={{ color: theme.textMuted, fontSize: "0.9rem", marginTop: "0.4rem" }}>
-            Predict your ideal role or let our AI analyze your CV.
-          </p>
-        </div>
-
-        {/* ── Tab switcher ── */}
-        <div style={{
-          display: "inline-flex",
-          background: theme.surface,
-          border: `1px solid ${theme.border}`,
-          borderRadius: 14,
-          padding: 4,
-          gap: 4,
-          marginBottom: "2rem",
-        }}>
-          {[
-            { key: "predictor", icon: "⚡", label: "Job Predictor" },
-            { key: "cv",        icon: "📄", label: "CV Analyzer"   },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.45rem",
-                padding: "0.6rem 1.4rem",
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                fontFamily: theme.fontSans,
-                background: activeTab === tab.key
-                  ? theme.gradientPrimary
-                  : "transparent",
-                color: activeTab === tab.key ? "#fff" : theme.textMuted,
-                transition: "all 0.2s",
-                boxShadow: activeTab === tab.key
-                  ? "0 2px 16px rgba(108,99,255,0.35)"
-                  : "none",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              <span style={{ fontSize: "0.95rem" }}>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Stats row (predictor only) ── */}
-        {activeTab === "predictor" && (
-          <div className="skillpath-fade">
-            <StatsRow />
-          </div>
-        )}
-      </div>
-
-      {/* ── Predictor panels ── */}
-      {activeTab === "predictor" && (
-        <div
-          className="skillpath-fade"
-          style={{ maxWidth: 1100, margin: "0 auto", padding: "0 2rem" }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            {/* Input panel wrapper */}
-            <div style={{
-              background: theme.surface,
-              border: `1px solid ${theme.border}`,
-              borderRadius: 20,
-              overflow: "hidden",
-              transition: "border-color 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = theme.borderHover}
-              onMouseLeave={e => e.currentTarget.style.borderColor = theme.border}
-            >
-              {/* Panel header */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.55rem",
-                padding: "1.25rem 1.5rem",
-                borderBottom: `1px solid ${theme.border}`,
-              }}>
-                <span style={{ fontSize: "1rem" }}>🎯</span>
-                <span style={{
-                  fontFamily: theme.fontDisplay,
-                  fontWeight: 800,
-                  fontSize: "0.95rem",
-                  letterSpacing: "-0.01em",
-                }}>
-                  Your Profile
-                </span>
+          {/* ── Predictor tab ── */}
+          {activeTab === "predictor" && (
+            <div className="sp-fade">
+              <div className="sp-fade sp-fade-d1" style={{ marginBottom: 28 }}>
+                <StatsRow />
               </div>
-              <div style={{ padding: "1.5rem" }}>
-                <InputPanel
-                  form={form}
-                  updateField={updateField}
-                  toggleSkill={toggleSkill}
-                  onPredict={handlePredict}
-                  loading={loading}
-                />
+              <div className="predictor-grid sp-fade sp-fade-d2">
+
+                {/* Input panel */}
+                <div className="panel-card">
+                  <div className="panel-header">
+                    <span className="panel-header-icon">🎯</span>
+                    <span className="panel-header-title">Your Profile</span>
+                  </div>
+                  <div className="panel-body">
+                    <InputPanel
+                      form={form}
+                      updateField={updateField}
+                      toggleSkill={toggleSkill}
+                      onPredict={handlePredict}
+                      loading={loading}
+                    />
+                  </div>
+                </div>
+
+                {/* Results panel */}
+                <div className="panel-card">
+                  <div className="panel-header">
+                    <span className="panel-header-icon">✨</span>
+                    <span className="panel-header-title">Prediction Results</span>
+                    <div className="panel-header-right">
+                      {loading && <div className="panel-spinner" />}
+                    </div>
+                  </div>
+                  <div className="panel-body">
+                    <ResultsPanel
+                      results={results}
+                      predictedLabel={predictedLabel}
+                      loading={loading}
+                      error={error}
+                      form={form}
+                    />
+                  </div>
+                </div>
+
               </div>
             </div>
+          )}
 
-            {/* Results panel wrapper */}
-            <div style={{
-              background: theme.surface,
-              border: `1px solid ${theme.border}`,
-              borderRadius: 20,
-              overflow: "hidden",
-              transition: "border-color 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(62,207,178,0.25)"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = theme.border}
-            >
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.55rem",
-                padding: "1.25rem 1.5rem",
-                borderBottom: `1px solid ${theme.border}`,
-              }}>
-                <span style={{ fontSize: "1rem" }}>✨</span>
-                <span style={{
-                  fontFamily: theme.fontDisplay,
-                  fontWeight: 800,
-                  fontSize: "0.95rem",
-                  letterSpacing: "-0.01em",
-                }}>
-                  Prediction Results
-                </span>
-                {loading && (
-                  <div style={{
-                    marginLeft: "auto",
-                    width: 16, height: 16,
-                    borderRadius: "50%",
-                    border: "2px solid rgba(108,99,255,0.2)",
-                    borderTop: `2px solid ${theme.purple}`,
-                    animation: "spin 0.75s linear infinite",
-                  }} />
-                )}
+          {/* ── CV Analyzer tab ── */}
+          {activeTab === "cv" && (
+            <div className="panel-card sp-fade" style={{ maxWidth: 720, margin: "0 auto" }}>
+              <div className="panel-header">
+                <span className="panel-header-icon">📄</span>
+                <span className="panel-header-title">CV Analyzer</span>
+                <div className="panel-header-right">
+                  <span className="ai-badge">AI-powered</span>
+                </div>
               </div>
-              <div style={{ padding: "1.5rem" }}>
-                <ResultsPanel
-                  results={results}
-                  predictedLabel={predictedLabel}
-                  loading={loading}
-                  error={error}
-                  form={form}
-                />
+              <div className="panel-body">
+                <CVAnalyzer user={user} />
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* ── CV Analyzer ── */}
-      {activeTab === "cv" && (
-        <div
-          className="skillpath-fade"
-          style={{ maxWidth: 1100, margin: "0 auto", padding: "0 2rem" }}
-        >
-          <div style={{
-            background: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: 20,
-            overflow: "hidden",
-          }}>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.55rem",
-              padding: "1.25rem 1.5rem",
-              borderBottom: `1px solid ${theme.border}`,
-            }}>
-              <span style={{ fontSize: "1rem" }}>📄</span>
-              <span style={{
-                fontFamily: theme.fontDisplay,
-                fontWeight: 800,
-                fontSize: "0.95rem",
-                letterSpacing: "-0.01em",
-              }}>
-                CV Analyzer
-              </span>
-              <div style={{
-                marginLeft: "auto",
-                fontSize: "0.72rem",
-                color: theme.teal,
-                background: "rgba(62,207,178,0.08)",
-                border: "1px solid rgba(62,207,178,0.2)",
-                borderRadius: 100,
-                padding: "0.2rem 0.7rem",
-              }}>
-                AI-powered
-              </div>
-            </div>
-            <div style={{ padding: "1.5rem" }}>
-              <CVAnalyzer user={user} />
-            </div>
-          </div>
         </div>
-      )}
-    </AppShell>
+      </AppShell>
+    </>
   );
 }

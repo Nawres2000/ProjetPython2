@@ -33,9 +33,18 @@ JWT_SECRET    = os.getenv("JWT_SECRET", "change-me-in-production-use-a-long-rand
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_H  = 24
 
-_mongo        = MongoClient(MONGODB_URI)
-_db           = _mongo["job_recommender_auth"]
-users_col     = _db["users"]
+# Initialize MongoDB with timeout and connection pooling
+try:
+    _mongo = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=5000)
+    _mongo.admin.command('ping')  # Test connection
+    _db = _mongo["job_recommender_auth"]
+    users_col = _db["users"]
+    print("✓ MongoDB connected successfully")
+except Exception as e:
+    print(f"✗ MongoDB connection failed: {e}. Running in offline mode.")
+    _mongo = None
+    _db = None
+    users_col = None
 
 bearer    = HTTPBearer()
 
@@ -70,6 +79,8 @@ def _make_token(email: str, username: str) -> str:
 
 @app.post("/auth/register", tags=["auth"])
 def register(body: UserRegister):
+    if users_col is None:
+        raise HTTPException(status_code=503, detail="Database service unavailable")
     if users_col.find_one({"email": body.email}):
         raise HTTPException(status_code=400, detail="Email already registered")
     users_col.insert_one({
@@ -84,6 +95,8 @@ def register(body: UserRegister):
 
 @app.post("/auth/login", tags=["auth"])
 def login(body: UserLogin):
+    if users_col is None:
+        raise HTTPException(status_code=503, detail="Database service unavailable")
     user = users_col.find_one({"email": body.email})
     if not user or not _verify(body.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -110,6 +123,8 @@ MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 def _get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+    if users_col is None:
+        raise HTTPException(status_code=503, detail="Database service unavailable")
     try:
         payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user = users_col.find_one({"email": payload["sub"]})
@@ -372,7 +387,7 @@ def health_check():
 @app.post("/predict")
 def predict_job(data: JobData):
     if not model:
-        raise HTTPException(status_code=503, detail="Modele non disponible")
+        raise HTTPException(status_code=503, detail="ML model not loaded. Server is starting up.")
     try:
         input_df   = build_features(data)
         prediction = model.predict(input_df)[0]
@@ -381,14 +396,16 @@ def predict_job(data: JobData):
         prob_dict = {cls: round(float(p), 4) for cls, p in zip(le.classes_, probas)} if le else {}
         return {"predicted_class": int(prediction), "predicted_label": predicted_label, "probabilities": prob_dict}
     except Exception as e:
-        print(f"ERREUR: {e}")   # ← ajoute cette ligne
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[ERROR] Prediction failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
     
 
 @app.post("/predict_batch")
 async def predict_batch(file: UploadFile = File(...)):
     if not model:
-        raise HTTPException(status_code=503, detail="Modele non disponible")
+        raise HTTPException(status_code=503, detail="ML model not loaded. Server is starting up.")
     try:
         content = await file.read()
         df = pd.read_csv(io.BytesIO(content))
@@ -398,7 +415,7 @@ async def predict_batch(file: UploadFile = File(...)):
                          'posted_month', 'posted_day', 'job_skills', 'job_type_skills']
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
-            raise HTTPException(status_code=400, detail=f"Colonnes manquantes : {missing}")
+            raise HTTPException(status_code=400, detail=f"Missing columns: {', '.join(missing)}")
         results = []
         for _, row in df.iterrows():
             job = JobData(**{c: row.get(c) for c in required_cols})

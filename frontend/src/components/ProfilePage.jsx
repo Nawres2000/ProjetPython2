@@ -5,7 +5,35 @@ import {
   apiDeleteCV, apiDeleteCover,
 } from "../services/api";
 
-/* ─────────────────────────── helpers ─────────────────────────── */
+/* ─── Tokens ────────────────────────────────────────────────────────────── */
+const T = {
+  white:       "#ffffff",
+  paper:       "#fafaf9",
+  warm:        "#f5f3ef",
+  warm2:       "#ede9e1",
+  border:      "#e2ddd6",
+  border2:     "#ccc7bf",
+  ink:         "#1a1814",
+  ink70:       "rgba(26,24,20,0.7)",
+  ink45:       "rgba(26,24,20,0.45)",
+  ink25:       "rgba(26,24,20,0.25)",
+  ink10:       "rgba(26,24,20,0.08)",
+  accent:      "#c8490a",
+  accentLight: "#fff3ee",
+  accentRule:  "#fbd0b8",
+  accentDark:  "#9a3208",
+  blue:        "#1d4ed8",
+  blueLight:   "#eff3ff",
+  blueRule:    "#bfcbfb",
+  green:       "#065f46",
+  greenLight:  "#ecfdf5",
+  greenRule:   "#a7f3d0",
+  sans:        "'DM Sans', system-ui, sans-serif",
+  serif:       "'Playfair Display', Georgia, serif",
+  mono:        "'DM Mono', monospace",
+};
+
+/* ─── Constants ─────────────────────────────────────────────────────────── */
 const uid = () => Math.random().toString(36).slice(2, 8);
 
 const ALL_SKILLS = [
@@ -17,85 +45,168 @@ const ALL_SKILLS = [
   "GraphQL","REST APIs","PostgreSQL","MongoDB","Redis","Next.js","Vue.js",
 ];
 
-const SKILL_LEVELS = ["Beginner","Intermediate","Advanced","Expert"];
-
+const SKILL_LEVELS   = ["Beginner","Intermediate","Advanced","Expert"];
 const DEGREE_OPTIONS = ["Bachelor's","Master's","PhD","Associate's","Diploma","Bootcamp","Self-taught"];
 
-/* ─────────────────────────── sub-components ─────────────────────────── */
+const LEVEL_COLORS = {
+  Beginner:     T.ink25,
+  Intermediate: T.blue,
+  Advanced:     T.accent,
+  Expert:       "#b45309",
+};
 
-function Section({ title, icon, children, action }) {
+/* ─── Base styles ───────────────────────────────────────────────────────── */
+const inputBase = {
+  width: "100%", boxSizing: "border-box",
+  background: T.warm, border: `1.5px solid ${T.border}`,
+  borderRadius: 8, padding: "9px 13px",
+  color: T.ink, fontSize: 13.5, fontFamily: T.sans,
+  outline: "none", transition: "border-color 0.15s, box-shadow 0.15s, background 0.15s",
+};
+
+/* ─── Micro-components ──────────────────────────────────────────────────── */
+function FieldLabel({ text }) {
   return (
-    <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, padding: "1.75rem", marginBottom: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <span style={{ fontSize: "1rem" }}>{icon}</span>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "1rem", margin: 0, letterSpacing: "-0.01em", color: "#f0ede8" }}>{title}</h2>
-        </div>
-        {action}
-      </div>
-      {children}
+    <div style={{
+      fontFamily: T.mono, fontSize: 10.5,
+      letterSpacing: "0.1em", textTransform: "uppercase",
+      color: T.ink25, marginBottom: 7, fontWeight: 500,
+    }}>{text}</div>
+  );
+}
+
+function FInput({ label, value, onChange, placeholder, type = "text", disabled }) {
+  const [f, setF] = useState(false);
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {label && <FieldLabel text={label} />}
+      <input
+        type={type} value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} disabled={disabled}
+        onFocus={() => setF(true)} onBlur={() => setF(false)}
+        style={{
+          ...inputBase,
+          borderColor: f ? T.accent : T.border,
+          background:  f ? T.white  : T.warm,
+          boxShadow:   f ? `0 0 0 3px ${T.accentLight}` : "none",
+          opacity: disabled ? 0.4 : 1,
+        }}
+      />
     </div>
   );
 }
 
-function AddButton({ onClick, label }) {
+function FTextarea({ label, value, onChange, placeholder, rows = 3 }) {
+  const [f, setF] = useState(false);
   return (
-    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "rgba(108,99,255,0.1)", border: "1px dashed rgba(108,99,255,0.35)", borderRadius: 8, padding: "0.45rem 1rem", color: "#a098ff", fontSize: "0.8rem", cursor: "pointer", transition: "all 0.2s" }}
-      onMouseEnter={e => { e.currentTarget.style.background = "rgba(108,99,255,0.18)"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = "rgba(108,99,255,0.1)"; }}>
-      <span style={{ fontSize: "1rem", lineHeight: 1 }}>+</span> {label}
-    </button>
-  );
-}
-
-function Input({ label, value, onChange, placeholder, type = "text", style = {} }) {
-  return (
-    <div style={{ marginBottom: "1rem", ...style }}>
-      {label && <label style={{ display: "block", fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{label}</label>}
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "0.7rem 0.9rem", color: "#f0ede8", fontSize: "0.875rem", outline: "none", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif" }} />
+    <div style={{ marginBottom: 16 }}>
+      {label && <FieldLabel text={label} />}
+      <textarea
+        value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} rows={rows}
+        onFocus={() => setF(true)} onBlur={() => setF(false)}
+        style={{
+          ...inputBase,
+          resize: "vertical", lineHeight: 1.65,
+          borderColor: f ? T.accent : T.border,
+          background:  f ? T.white  : T.warm,
+          boxShadow:   f ? `0 0 0 3px ${T.accentLight}` : "none",
+        }}
+      />
     </div>
   );
 }
 
-function Textarea({ label, value, onChange, placeholder, rows = 3 }) {
+function FSelect({ label, value, onChange, options }) {
   return (
-    <div style={{ marginBottom: "1rem" }}>
-      {label && <label style={{ display: "block", fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{label}</label>}
-      <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-        style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "0.7rem 0.9rem", color: "#f0ede8", fontSize: "0.875rem", outline: "none", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif", resize: "vertical", lineHeight: 1.6 }} />
-    </div>
-  );
-}
-
-function Select({ label, value, onChange, options }) {
-  return (
-    <div style={{ marginBottom: "1rem" }}>
-      {label && <label style={{ display: "block", fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{label}</label>}
-      <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "0.7rem 0.9rem", color: "#f0ede8", fontSize: "0.875rem", outline: "none", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}>
-        {options.map(o => <option key={o} value={o} style={{ background: "#16161f" }}>{o}</option>)}
+    <div style={{ marginBottom: 16 }}>
+      {label && <FieldLabel text={label} />}
+      <select
+        value={value} onChange={e => onChange(e.target.value)}
+        style={{ ...inputBase, cursor: "pointer", color: T.ink }}
+      >
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
   );
 }
 
 function DeleteBtn({ onClick }) {
+  const [h, setH] = useState(false);
   return (
-    <button onClick={onClick} style={{ background: "rgba(227,63,63,0.08)", border: "1px solid rgba(227,63,63,0.15)", borderRadius: 7, padding: "0.3rem 0.55rem", color: "rgba(240,100,100,0.6)", cursor: "pointer", fontSize: "0.75rem", lineHeight: 1, transition: "all 0.15s" }}
-      onMouseEnter={e => { e.currentTarget.style.background = "rgba(227,63,63,0.15)"; e.currentTarget.style.color = "#f06464"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = "rgba(227,63,63,0.08)"; e.currentTarget.style.color = "rgba(240,100,100,0.6)"; }}>✕</button>
+    <button onClick={onClick}
+      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{
+        background: h ? "#fee2e2" : T.warm,
+        border: `1px solid ${h ? "#fca5a5" : T.border}`,
+        borderRadius: 7, padding: "4px 9px",
+        color: h ? "#b91c1c" : T.ink45,
+        cursor: "pointer", fontSize: 13, lineHeight: 1,
+        transition: "all 0.15s",
+      }}>✕</button>
   );
 }
 
-/* ─────────────────────────── upload zone ─────────────────────────── */
+function AddButton({ onClick, label }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick}
+      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 6,
+        background: h ? T.accentLight : T.warm,
+        border: `1.5px dashed ${h ? T.accentRule : T.border}`,
+        borderRadius: 8, padding: "6px 14px",
+        color: h ? T.accent : T.ink45,
+        fontSize: 13, fontFamily: T.sans, cursor: "pointer",
+        transition: "all 0.18s",
+      }}>
+      <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> {label}
+    </button>
+  );
+}
+
+const ArrowRight = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+/* ─── Section wrapper ───────────────────────────────────────────────────── */
+function Section({ title, icon, children, action }) {
+  return (
+    <div style={{
+      background: T.white, border: `1px solid ${T.border}`,
+      borderRadius: 18, overflow: "hidden",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+      marginBottom: 16,
+    }}>
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${T.accent}, ${T.blue})` }} />
+      <div style={{ padding: "24px 28px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 16 }}>{icon}</span>
+            <h2 style={{
+              fontFamily: T.serif, fontWeight: 400, fontSize: 18,
+              margin: 0, color: T.ink, letterSpacing: "-0.01em",
+            }}>{title}</h2>
+          </div>
+          {action}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Upload zone ───────────────────────────────────────────────────────── */
 function UploadZone({ label, accept, file, onFile, icon }) {
   const inputRef = useRef();
   const [dragging, setDragging] = useState(false);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
+  const handleDrop = e => {
+    e.preventDefault(); setDragging(false);
     const f = e.dataTransfer.files[0];
     if (f) onFile(f);
   };
@@ -106,194 +217,133 @@ function UploadZone({ label, accept, file, onFile, icon }) {
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      style={{ border: `1.5px dashed ${dragging ? "rgba(108,99,255,0.6)" : file ? "rgba(62,207,178,0.4)" : "rgba(255,255,255,0.1)"}`, borderRadius: 14, padding: "1.75rem 1.5rem", textAlign: "center", cursor: "pointer", transition: "all 0.2s", background: dragging ? "rgba(108,99,255,0.06)" : file ? "rgba(62,207,178,0.04)" : "rgba(255,255,255,0.015)" }}>
+      style={{
+        border: `1.5px dashed ${dragging ? T.accent : file ? T.greenRule : T.border2}`,
+        borderRadius: 12, padding: "28px 20px",
+        textAlign: "center", cursor: "pointer",
+        background: dragging ? T.accentLight : file ? T.greenLight : T.warm,
+        transition: "all 0.2s",
+      }}
+    >
       <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }} onChange={e => onFile(e.target.files[0])} />
-      <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>{file ? "✅" : icon}</div>
+      <div style={{ fontSize: 28, marginBottom: 8 }}>{file ? "✅" : icon}</div>
       {file ? (
         <>
-          <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#3ecfb2", marginBottom: "0.25rem" }}>{file.name}</div>
-          <div style={{ fontSize: "0.75rem", color: "rgba(240,237,232,0.3)" }}>{(file.size / 1024).toFixed(0)} KB · Click to replace</div>
+          <div style={{ fontSize: 13.5, fontWeight: 500, color: T.green, marginBottom: 3 }}>{file.name}</div>
+          <div style={{ fontSize: 12, color: T.ink45, fontFamily: T.mono }}>
+            {file.size ? `${(file.size / 1024).toFixed(0)} KB · ` : ""}Click to replace
+          </div>
         </>
       ) : (
         <>
-          <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "rgba(240,237,232,0.55)", marginBottom: "0.25rem" }}>{label}</div>
-          <div style={{ fontSize: "0.75rem", color: "rgba(240,237,232,0.25)" }}>PDF, DOC, DOCX · Max 5 MB</div>
+          <div style={{ fontSize: 13.5, color: T.ink70, marginBottom: 3 }}>{label}</div>
+          <div style={{ fontSize: 12, color: T.ink25, fontFamily: T.mono }}>PDF, DOC, DOCX · Max 5 MB</div>
         </>
       )}
     </div>
   );
 }
 
-/* ─────────────────────────── profile completion ring ─────────────────────────── */
+/* ─── Completion ring ───────────────────────────────────────────────────── */
 function CompletionRing({ pct }) {
   const r = 28, circ = 2 * Math.PI * r;
   const dash = circ * (pct / 100);
   return (
     <svg width="72" height="72" viewBox="0 0 72 72">
-      <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-      <circle cx="36" cy="36" r={r} fill="none" stroke="url(#ring-grad)" strokeWidth="5"
-        strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ * 0.25} strokeLinecap="round" style={{ transition: "stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
-      <defs>
-        <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6c63ff" />
-          <stop offset="100%" stopColor="#3ecfb2" />
-        </linearGradient>
-      </defs>
-      <text x="36" y="40" textAnchor="middle" fill="#f0ede8" fontSize="13" fontWeight="700" fontFamily="'Syne', sans-serif">{pct}%</text>
+      <circle cx="36" cy="36" r={r} fill="none" stroke={T.warm2} strokeWidth="5" />
+      <circle cx="36" cy="36" r={r} fill="none" stroke={T.accent} strokeWidth="5"
+        strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ * 0.25}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
+      <text x="36" y="40" textAnchor="middle" fill={T.ink} fontSize="13"
+        fontWeight="500" fontFamily={T.mono}>{pct}%</text>
     </svg>
   );
 }
 
-/* ─────────────────────────── MAIN PAGE ─────────────────────────── */
+/* ─── Main ──────────────────────────────────────────────────────────────── */
 export default function ProfilePage({ user, onBack }) {
-  /* — basic info — */
-  const [avatarUrl, setAvatarUrl] = useState(null);
-  const [name, setName] = useState(user?.username || "");
-  const [title, setTitle] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
-  const [linkedin, setLinkedin] = useState("");
-  const [bio, setBio] = useState("");
-
-  /* — documents (stored info from server) — */
-  const [cvInfo, setCvInfo] = useState(null);     // { path, filename } or null
-  const [coverInfo, setCoverInfo] = useState(null);
-  const [cvUploading, setCvUploading] = useState(false);
+  const [avatarUrl,      setAvatarUrl]      = useState(null);
+  const [name,           setName]           = useState(user?.username || "");
+  const [title,          setTitle]          = useState("");
+  const [email,          setEmail]          = useState(user?.email || "");
+  const [phone,          setPhone]          = useState("");
+  const [location,       setLocation]       = useState("");
+  const [linkedin,       setLinkedin]       = useState("");
+  const [bio,            setBio]            = useState("");
+  const [cvInfo,         setCvInfo]         = useState(null);
+  const [coverInfo,      setCoverInfo]      = useState(null);
+  const [cvUploading,    setCvUploading]    = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [saving,         setSaving]         = useState(false);
+  const [saveMsg,        setSaveMsg]        = useState(null);
+  const [skills,         setSkills]         = useState([]);
+  const [skillInput,     setSkillInput]     = useState("");
+  const [skillLevel,     setSkillLevel]     = useState("Intermediate");
+  const [skillSugg,      setSkillSugg]      = useState([]);
+  const [educations,     setEducations]     = useState([]);
+  const [experiences,    setExperiences]    = useState([]);
+  const [tab,            setTab]            = useState("profile");
+  const avatarRef = useRef();
 
-  /* — save state — */
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState(null);
-
-  /* — load profile on mount — */
   useEffect(() => {
     if (!user?.token) return;
-    apiGetProfile(user.token).then((p) => {
-      if (p.title)    setTitle(p.title);
-      if (p.phone)    setPhone(p.phone);
-      if (p.location) setLocation(p.location);
-      if (p.linkedin) setLinkedin(p.linkedin);
-      if (p.bio)      setBio(p.bio);
-      if (p.skills)   setSkills(p.skills);
+    apiGetProfile(user.token).then(p => {
+      if (p.title)       setTitle(p.title);
+      if (p.phone)       setPhone(p.phone);
+      if (p.location)    setLocation(p.location);
+      if (p.linkedin)    setLinkedin(p.linkedin);
+      if (p.bio)         setBio(p.bio);
+      if (p.skills)      setSkills(p.skills);
       if (p.educations)  setEducations(p.educations);
       if (p.experiences) setExperiences(p.experiences);
-      if (p.cv_path)    setCvInfo({ path: p.cv_path, filename: p.cv_filename });
-      if (p.cover_path) setCoverInfo({ path: p.cover_path, filename: p.cover_filename });
+      if (p.cv_path)     setCvInfo({ path: p.cv_path, filename: p.cv_filename });
+      if (p.cover_path)  setCoverInfo({ path: p.cover_path, filename: p.cover_filename });
     }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* — skills — */
-  const [skills, setSkills] = useState([]);
-  const [skillInput, setSkillInput] = useState("");
-  const [skillLevel, setSkillLevel] = useState("Intermediate");
-  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  /* — handlers — */
+  const handleAvatar   = f => setAvatarUrl(URL.createObjectURL(f));
 
-  /* — education — */
-  const [educations, setEducations] = useState([]);
+  const handleCvFile   = async f => { setCvUploading(true); try { setCvInfo(await apiUploadCV(user.token, f)); } catch(e) { alert(e.message); } finally { setCvUploading(false); } };
+  const handleCoverFile= async f => { setCoverUploading(true); try { setCoverInfo(await apiUploadCover(user.token, f)); } catch(e) { alert(e.message); } finally { setCoverUploading(false); } };
+  const handleRemoveCv   = async () => { try { await apiDeleteCV(user.token);    setCvInfo(null);    } catch(e) { alert(e.message); } };
+  const handleRemoveCover= async () => { try { await apiDeleteCover(user.token); setCoverInfo(null); } catch(e) { alert(e.message); } };
 
-  /* — experience — */
-  const [experiences, setExperiences] = useState([]);
-
-  /* — active tab — */
-  const [tab, setTab] = useState("profile");
-
-  /* — avatar (local preview only) — */
-  const avatarRef = useRef();
-  const handleAvatar = (f) => {
-    setAvatarUrl(URL.createObjectURL(f));
-  };
-
-  /* — CV upload — */
-  const handleCvFile = async (f) => {
-    setCvUploading(true);
-    try {
-      const result = await apiUploadCV(user.token, f);
-      setCvInfo(result);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCvUploading(false);
-    }
-  };
-
-  /* — Cover letter upload — */
-  const handleCoverFile = async (f) => {
-    setCoverUploading(true);
-    try {
-      const result = await apiUploadCover(user.token, f);
-      setCoverInfo(result);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCoverUploading(false);
-    }
-  };
-
-  /* — Remove CV — */
-  const handleRemoveCv = async () => {
-    try {
-      await apiDeleteCV(user.token);
-      setCvInfo(null);
-    } catch (e) {
-      alert(e.message);
-    }
-  };
-
-  /* — Remove Cover — */
-  const handleRemoveCover = async () => {
-    try {
-      await apiDeleteCover(user.token);
-      setCoverInfo(null);
-    } catch (e) {
-      alert(e.message);
-    }
-  };
-
-  /* — Save profile — */
   const handleSave = async () => {
-    setSaving(true);
-    setSaveMsg(null);
+    setSaving(true); setSaveMsg(null);
     try {
       await apiSaveProfile(user.token, { title, phone, location, linkedin, bio, skills, educations, experiences });
-      setSaveMsg("Profile saved!");
-      setTimeout(() => setSaveMsg(null), 3000);
-    } catch (e) {
-      setSaveMsg("Failed to save: " + e.message);
-    } finally {
-      setSaving(false);
-    }
+      setSaveMsg("Profile saved!"); setTimeout(() => setSaveMsg(null), 3000);
+    } catch(e) { setSaveMsg("Failed to save: " + e.message); } finally { setSaving(false); }
   };
 
   /* — skills — */
-  const handleSkillInput = (val) => {
+  const handleSkillInput = val => {
     setSkillInput(val);
-    if (val.length > 0) {
-      setSkillSuggestions(ALL_SKILLS.filter(s => s.toLowerCase().includes(val.toLowerCase()) && !skills.find(sk => sk.name === s)).slice(0, 5));
-    } else setSkillSuggestions([]);
+    setSkillSugg(val.length > 0
+      ? ALL_SKILLS.filter(s => s.toLowerCase().includes(val.toLowerCase()) && !skills.find(sk => sk.name === s)).slice(0, 5)
+      : []);
   };
-
-  const addSkill = (name) => {
+  const addSkill = name => {
     if (!name.trim() || skills.find(s => s.name === name)) return;
     setSkills([...skills, { id: uid(), name, level: skillLevel }]);
-    setSkillInput(""); setSkillSuggestions([]);
+    setSkillInput(""); setSkillSugg([]);
   };
-
-  const removeSkill = (id) => setSkills(skills.filter(s => s.id !== id));
+  const removeSkill      = id    => setSkills(skills.filter(s => s.id !== id));
   const updateSkillLevel = (id, level) => setSkills(skills.map(s => s.id === id ? { ...s, level } : s));
 
   /* — education — */
-  const addEdu = () => setEducations([...educations, { id: uid(), degree: "Bachelor's", field: "", school: "", year: "", description: "" }]);
-  const removeEdu = (id) => setEducations(educations.filter(e => e.id !== id));
+  const addEdu    = () => setEducations([...educations, { id: uid(), degree: "Bachelor's", field: "", school: "", year: "", description: "" }]);
+  const removeEdu = id => setEducations(educations.filter(e => e.id !== id));
   const updateEdu = (id, key, val) => setEducations(educations.map(e => e.id === id ? { ...e, [key]: val } : e));
 
   /* — experience — */
-  const addExp = () => setExperiences([...experiences, { id: uid(), role: "", company: "", start: "", end: "", current: false, description: "" }]);
-  const removeExp = (id) => setExperiences(experiences.filter(e => e.id !== id));
+  const addExp    = () => setExperiences([...experiences, { id: uid(), role: "", company: "", start: "", end: "", current: false, description: "" }]);
+  const removeExp = id => setExperiences(experiences.filter(e => e.id !== id));
   const updateExp = (id, key, val) => setExperiences(experiences.map(e => e.id === id ? { ...e, [key]: val } : e));
 
-  /* — completion score — */
+  /* — completion — */
   const completion = Math.round(
     ([name, email, bio, phone, location].filter(Boolean).length / 5 * 20) +
     (cvInfo ? 15 : 0) + (coverInfo ? 10 : 0) +
@@ -302,193 +352,253 @@ export default function ProfilePage({ user, onBack }) {
     (experiences.length > 0 ? 18 : 0)
   );
 
-  const levelColor = (level) => ({
-    Beginner: "#888", Intermediate: "#6c63ff", Advanced: "#3ecfb2", Expert: "#f5c842"
-  }[level] || "#888");
+  const TABS = [
+    { key: "profile",    icon: "👤", label: "Basic Info"   },
+    { key: "documents",  icon: "📄", label: "Documents"    },
+    { key: "skills",     icon: "⚡", label: "Skills"       },
+    { key: "education",  icon: "🎓", label: "Education"    },
+    { key: "experience", icon: "💼", label: "Experience"   },
+  ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#0a0a0f", minHeight: "100vh", color: "#f0ede8" }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+    <div style={{ fontFamily: T.sans, background: T.paper, minHeight: "100vh", color: T.ink }}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
       <style>{`
         * { box-sizing: border-box; }
-        ::placeholder { color: rgba(240,237,232,0.2) !important; }
-        select option { background: #16161f; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-        .fade-up { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        ::placeholder { color: ${T.ink25} !important; }
+        @keyframes sp-fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+        .sp-fade { animation: sp-fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes sp-spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* ── NAV ── */}
-      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 3rem", borderBottom: "1px solid rgba(240,237,232,0.07)", position: "sticky", top: 0, background: "rgba(10,10,15,0.9)", backdropFilter: "blur(14px)", zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, #6c63ff, #3ecfb2)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8 3l5 5-5 5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      {/* ── Nav ── */}
+      <nav style={{
+        height: 62, display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 48px", borderBottom: `1px solid ${T.border}`,
+        position: "sticky", top: 0,
+        background: "rgba(255,255,255,0.94)", backdropFilter: "blur(14px)", zIndex: 100,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div style={{ position: "absolute", top: 0, right: 0, width: 10, height: 10, background: T.accent, clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} />
           </div>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "1.1rem", background: "linear-gradient(90deg, #c8c0ff, #3ecfb2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SkillPath</span>
+          <span style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 700, color: T.ink, letterSpacing: "-0.01em" }}>SkillPath</span>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <button onClick={onBack} style={{ textDecoration: "none", color: "rgba(240,237,232,0.4)", fontSize: "0.875rem", padding: "0.35rem 0.85rem", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}>← Dashboard</button>
-          <span style={{ color: "#a098ff", fontSize: "0.875rem", padding: "0.35rem 0.85rem", borderRadius: 8, background: "rgba(108,99,255,0.1)" }}>Profile</span>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button onClick={onBack}
+            style={{ padding: "7px 16px", borderRadius: 8, background: "transparent", border: `1px solid ${T.border}`, color: T.ink70, fontSize: 13.5, fontFamily: T.sans, cursor: "pointer", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = T.warm; e.currentTarget.style.borderColor = T.border2; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = T.border; }}>
+            ← Dashboard
+          </button>
+          <span style={{ padding: "7px 16px", borderRadius: 8, background: T.accentLight, border: `1px solid ${T.accentRule}`, color: T.accent, fontSize: 13.5, fontFamily: T.mono, fontWeight: 500 }}>Profile</span>
         </div>
-        <button style={{ background: "linear-gradient(135deg, #6c63ff, #3ecfb2)", border: "none", borderRadius: 8, padding: "0.5rem 1.25rem", color: "#fff", cursor: "pointer", fontSize: "0.85rem", fontWeight: 500 }}>Save profile</button>
+
+        <button onClick={handleSave} disabled={saving}
+          style={{ padding: "8px 20px", borderRadius: 8, background: saving ? T.warm : T.ink, border: `2px solid ${saving ? T.border : T.ink}`, color: saving ? T.ink45 : "#fff", fontSize: 13.5, fontFamily: T.sans, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8 }}
+          onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = T.accent; e.currentTarget.style.borderColor = T.accent; } }}
+          onMouseLeave={e => { if (!saving) { e.currentTarget.style.background = T.ink; e.currentTarget.style.borderColor = T.ink; } }}>
+          {saving ? <><span style={{ width: 12, height: 12, borderRadius: "50%", border: `1.5px solid ${T.border}`, borderTopColor: T.accent, display: "inline-block", animation: "sp-spin 0.75s linear infinite" }} /> Saving…</> : <>Save profile <ArrowRight /></>}
+        </button>
       </nav>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "2.5rem 2rem", display: "grid", gridTemplateColumns: "280px 1fr", gap: "1.75rem", alignItems: "start" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 48px", display: "grid", gridTemplateColumns: "260px 1fr", gap: 24, alignItems: "start" }}>
 
-        {/* ── LEFT SIDEBAR ── */}
-        <div style={{ position: "sticky", top: "90px" }}>
-          {/* Avatar + name card */}
-          <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, padding: "1.75rem", marginBottom: "1rem", textAlign: "center" }}>
-            <div style={{ position: "relative", display: "inline-block", marginBottom: "1rem" }}>
-              <div onClick={() => avatarRef.current.click()} style={{ width: 90, height: 90, borderRadius: "50%", background: avatarUrl ? "transparent" : "linear-gradient(135deg, rgba(108,99,255,0.3), rgba(62,207,178,0.3))", border: "2px solid rgba(108,99,255,0.3)", overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", color: "rgba(240,237,232,0.4)" }}>
-                {avatarUrl ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+        {/* ── Left sidebar ── */}
+        <div style={{ position: "sticky", top: 78 }}>
+
+          {/* Avatar card */}
+          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 18, overflow: "hidden", marginBottom: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+            <div style={{ height: 3, background: `linear-gradient(90deg, ${T.accent}, ${T.blue})` }} />
+            <div style={{ padding: "24px 20px", textAlign: "center" }}>
+              <div style={{ position: "relative", display: "inline-block", marginBottom: 14 }}>
+                <div onClick={() => avatarRef.current.click()} style={{ width: 88, height: 88, borderRadius: "50%", background: avatarUrl ? "transparent" : T.warm2, border: `2px solid ${T.border}`, overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: T.ink25, transition: "border-color 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+                  {avatarUrl ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                </div>
+                <div onClick={() => avatarRef.current.click()} style={{ position: "absolute", bottom: 2, right: 2, width: 24, height: 24, borderRadius: "50%", background: T.ink, border: `2px solid ${T.white}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 7.5L3.5 5l4-4M6.5 1.5l2 2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                </div>
+                <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleAvatar(e.target.files[0])} />
               </div>
-              <div onClick={() => avatarRef.current.click()} style={{ position: "absolute", bottom: 2, right: 2, width: 24, height: 24, borderRadius: "50%", background: "#6c63ff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "2px solid #0a0a0f" }}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 7.5L3.5 5l4-4M6.5 1.5l2 2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              <div style={{ fontFamily: T.serif, fontWeight: 400, fontSize: 17, color: T.ink, marginBottom: 3, lineHeight: 1.2 }}>{name || "Your Name"}</div>
+              <div style={{ fontSize: 12.5, color: T.ink45, marginBottom: 16, fontStyle: "italic" }}>{title || "Your Title"}</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
+                <CompletionRing pct={completion} />
               </div>
-              <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleAvatar(e.target.files[0])} />
+              <div style={{ fontFamily: T.mono, fontSize: 10.5, color: T.ink25, letterSpacing: "0.06em", textTransform: "uppercase" }}>Profile completeness</div>
             </div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "1.05rem", marginBottom: "0.25rem" }}>{name || "Your Name"}</div>
-            <div style={{ fontSize: "0.8rem", color: "rgba(240,237,232,0.4)", marginBottom: "1rem" }}>{title || "Your Title"}</div>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <CompletionRing pct={completion} />
-            </div>
-            <div style={{ fontSize: "0.72rem", color: "rgba(240,237,232,0.3)", marginTop: "0.5rem" }}>Profile completeness</div>
           </div>
 
-          {/* Side nav */}
-          <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, overflow: "hidden" }}>
-            {[
-              { key: "profile", icon: "👤", label: "Basic Info" },
-              { key: "documents", icon: "📄", label: "Documents" },
-              { key: "skills", icon: "⚡", label: "Skills" },
-              { key: "education", icon: "🎓", label: "Education" },
-              { key: "experience", icon: "💼", label: "Experience" },
-            ].map(({ key, icon, label }) => (
-              <button key={key} onClick={() => setTab(key)}
-                style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%", padding: "0.9rem 1.25rem", background: tab === key ? "rgba(108,99,255,0.12)" : "transparent", border: "none", borderLeft: `2.5px solid ${tab === key ? "#6c63ff" : "transparent"}`, cursor: "pointer", fontSize: "0.875rem", color: tab === key ? "#a098ff" : "rgba(240,237,232,0.45)", textAlign: "left", transition: "all 0.15s", fontFamily: "'DM Sans', sans-serif" }}>
-                <span style={{ fontSize: "1rem" }}>{icon}</span>
+          {/* Tab nav */}
+          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+            {TABS.map(({ key, icon, label }) => (
+              <button key={key} onClick={() => setTab(key)} style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%",
+                padding: "11px 16px",
+                background: tab === key ? T.accentLight : "transparent",
+                border: "none",
+                borderLeft: `3px solid ${tab === key ? T.accent : "transparent"}`,
+                cursor: "pointer", fontSize: 13.5,
+                color: tab === key ? T.accent : T.ink70,
+                fontFamily: T.sans, fontWeight: tab === key ? 500 : 400,
+                textAlign: "left", transition: "all 0.15s",
+              }}
+                onMouseEnter={e => { if (tab !== key) e.currentTarget.style.background = T.warm; }}
+                onMouseLeave={e => { if (tab !== key) e.currentTarget.style.background = "transparent"; }}>
+                <span style={{ fontSize: 15 }}>{icon}</span>
                 <span>{label}</span>
-                {tab === key && <span style={{ marginLeft: "auto", fontSize: "0.7rem", opacity: 0.5 }}>▶</span>}
+                {tab === key && <span style={{ marginLeft: "auto" }}><ArrowRight /></span>}
               </button>
             ))}
           </div>
 
-          {/* Quick stats */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "1.25rem", marginTop: "1rem" }}>
-            <div style={{ fontSize: "0.72rem", color: "rgba(240,237,232,0.3)", letterSpacing: "0.06em", marginBottom: "0.85rem" }}>PROFILE STATS</div>
+          {/* Stats */}
+          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 18px", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+            <FieldLabel text="Profile Stats" />
             {[
-              { label: "Skills", value: skills.length, color: "#6c63ff" },
-              { label: "Experiences", value: experiences.length, color: "#3ecfb2" },
-              { label: "Education", value: educations.length, color: "#a098ff" },
+              { label: "Skills",      value: skills.length,      color: T.blue   },
+              { label: "Experiences", value: experiences.length, color: T.accent },
+              { label: "Education",   value: educations.length,  color: T.green  },
             ].map(s => (
-              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
-                <span style={{ fontSize: "0.8rem", color: "rgba(240,237,232,0.4)" }}>{s.label}</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 600, color: s.color }}>{s.value}</span>
+              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 13, color: T.ink70 }}>{s.label}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 13, fontWeight: 500, color: s.color }}>{s.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── RIGHT CONTENT ── */}
-        <div className="fade-up" key={tab}>
+        {/* ── Right content ── */}
+        <div className="sp-fade" key={tab}>
 
-          {/* ── PROFILE TAB ── */}
+          {/* PROFILE TAB */}
           {tab === "profile" && (
-            <div>
-              <Section title="Basic Information" icon="👤">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 1.25rem" }}>
-                  <Input label="FULL NAME" value={name} onChange={setName} placeholder="e.g. Amine Belhaj" />
-                  <Input label="JOB TITLE" value={title} onChange={setTitle} placeholder="e.g. Frontend Developer" />
-                  <Input label="EMAIL" value={email} onChange={setEmail} placeholder="you@email.com" type="email" />
-                  <Input label="PHONE" value={phone} onChange={setPhone} placeholder="+216 XX XXX XXX" />
-                  <Input label="LOCATION" value={location} onChange={setLocation} placeholder="City, Country" />
-                  <Input label="LINKEDIN" value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/..." />
-                </div>
-                <Textarea label="BIO" value={bio} onChange={setBio} placeholder="Write a short professional summary about yourself…" rows={4} />
-              </Section>
-            </div>
+            <Section title="Basic Information" icon="👤">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                <FInput label="Full Name"    value={name}     onChange={setName}     placeholder="e.g. Amine Belhaj" />
+                <FInput label="Job Title"    value={title}    onChange={setTitle}    placeholder="e.g. Frontend Developer" />
+                <FInput label="Email"        value={email}    onChange={setEmail}    placeholder="you@email.com" type="email" />
+                <FInput label="Phone"        value={phone}    onChange={setPhone}    placeholder="+216 XX XXX XXX" />
+                <FInput label="Location"     value={location} onChange={setLocation} placeholder="City, Country" />
+                <FInput label="LinkedIn"     value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/…" />
+              </div>
+              <FTextarea label="Bio" value={bio} onChange={setBio} placeholder="Write a short professional summary about yourself…" rows={4} />
+            </Section>
           )}
 
-          {/* ── DOCUMENTS TAB ── */}
+          {/* DOCUMENTS TAB */}
           {tab === "documents" && (
             <Section title="Documents" icon="📄">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 <div>
-                  <div style={{ fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.65rem" }}>CURRICULUM VITAE</div>
-                  {cvUploading ? (
-                    <div style={{ borderRadius: 14, padding: "2rem", textAlign: "center", color: "rgba(240,237,232,0.4)", border: "1.5px dashed rgba(255,255,255,0.1)" }}>Uploading…</div>
-                  ) : (
-                    <UploadZone label="Drop your CV here or click to browse" accept=".pdf,.doc,.docx" file={cvInfo ? { name: cvInfo.filename, size: 0 } : null} onFile={handleCvFile} icon="📋" />
-                  )}
+                  <FieldLabel text="Curriculum Vitae" />
+                  {cvUploading
+                    ? <div style={{ borderRadius: 12, padding: "2rem", textAlign: "center", color: T.ink45, border: `1.5px dashed ${T.border}`, background: T.warm }}>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, borderTopColor: T.accent, animation: "sp-spin 0.75s linear infinite", margin: "0 auto 10px" }} />
+                        <span style={{ fontFamily: T.mono, fontSize: 12 }}>Uploading…</span>
+                      </div>
+                    : <UploadZone label="Drop your CV here or click to browse" accept=".pdf,.doc,.docx" file={cvInfo ? { name: cvInfo.filename, size: 0 } : null} onFile={handleCvFile} icon="📋" />
+                  }
                   {cvInfo && !cvUploading && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem" }}>
-                      <a href={`/backend${cvInfo.path}`} target="_blank" rel="noreferrer" style={{ background: "rgba(62,207,178,0.1)", border: "1px solid rgba(62,207,178,0.2)", borderRadius: 8, padding: "0.4rem 1rem", color: "#3ecfb2", cursor: "pointer", fontSize: "0.8rem", textDecoration: "none" }}>Download</a>
-                      <button onClick={handleRemoveCv} style={{ background: "transparent", border: "none", color: "rgba(240,100,100,0.5)", cursor: "pointer", fontSize: "0.8rem" }}>Remove</button>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                      <a href={`/backend${cvInfo.path}`} target="_blank" rel="noreferrer"
+                        style={{ background: T.greenLight, border: `1px solid ${T.greenRule}`, borderRadius: 8, padding: "5px 14px", color: T.green, fontSize: 12.5, fontFamily: T.sans, textDecoration: "none" }}>
+                        Download
+                      </a>
+                      <button onClick={handleRemoveCv} style={{ background: "transparent", border: "none", color: T.ink45, cursor: "pointer", fontSize: 12.5, fontFamily: T.sans }}>Remove</button>
                     </div>
                   )}
                 </div>
                 <div>
-                  <div style={{ fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.65rem" }}>COVER LETTER</div>
-                  {coverUploading ? (
-                    <div style={{ borderRadius: 14, padding: "2rem", textAlign: "center", color: "rgba(240,237,232,0.4)", border: "1.5px dashed rgba(255,255,255,0.1)" }}>Uploading…</div>
-                  ) : (
-                    <UploadZone label="Drop your cover letter here or click to browse" accept=".pdf,.doc,.docx" file={coverInfo ? { name: coverInfo.filename, size: 0 } : null} onFile={handleCoverFile} icon="✉️" />
-                  )}
+                  <FieldLabel text="Cover Letter" />
+                  {coverUploading
+                    ? <div style={{ borderRadius: 12, padding: "2rem", textAlign: "center", color: T.ink45, border: `1.5px dashed ${T.border}`, background: T.warm }}>
+                        <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, borderTopColor: T.accent, animation: "sp-spin 0.75s linear infinite", margin: "0 auto 10px" }} />
+                        <span style={{ fontFamily: T.mono, fontSize: 12 }}>Uploading…</span>
+                      </div>
+                    : <UploadZone label="Drop your cover letter here or click to browse" accept=".pdf,.doc,.docx" file={coverInfo ? { name: coverInfo.filename, size: 0 } : null} onFile={handleCoverFile} icon="✉️" />
+                  }
                   {coverInfo && !coverUploading && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem" }}>
-                      <a href={`/backend${coverInfo.path}`} target="_blank" rel="noreferrer" style={{ background: "rgba(62,207,178,0.1)", border: "1px solid rgba(62,207,178,0.2)", borderRadius: 8, padding: "0.4rem 1rem", color: "#3ecfb2", cursor: "pointer", fontSize: "0.8rem", textDecoration: "none" }}>Download</a>
-                      <button onClick={handleRemoveCover} style={{ background: "transparent", border: "none", color: "rgba(240,100,100,0.5)", cursor: "pointer", fontSize: "0.8rem" }}>Remove</button>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                      <a href={`/backend${coverInfo.path}`} target="_blank" rel="noreferrer"
+                        style={{ background: T.greenLight, border: `1px solid ${T.greenRule}`, borderRadius: 8, padding: "5px 14px", color: T.green, fontSize: 12.5, fontFamily: T.sans, textDecoration: "none" }}>
+                        Download
+                      </a>
+                      <button onClick={handleRemoveCover} style={{ background: "transparent", border: "none", color: T.ink45, cursor: "pointer", fontSize: 12.5, fontFamily: T.sans }}>Remove</button>
                     </div>
                   )}
                 </div>
               </div>
-              <div style={{ marginTop: "1.5rem", background: "rgba(108,99,255,0.06)", border: "1px solid rgba(108,99,255,0.12)", borderRadius: 12, padding: "1rem 1.25rem" }}>
-                <div style={{ fontSize: "0.8rem", color: "rgba(240,237,232,0.45)", lineHeight: 1.7 }}>
-                  💡 <strong style={{ color: "rgba(240,237,232,0.7)", fontWeight: 500 }}>Tip:</strong> A complete CV increases your match rate by up to 3×. Make sure your file is up-to-date and under 5 MB.
+              <div style={{ marginTop: 20, background: T.accentLight, border: `1px solid ${T.accentRule}`, borderRadius: 10, padding: "13px 16px" }}>
+                <div style={{ fontSize: 13, color: T.ink70, lineHeight: 1.7 }}>
+                  💡 <span style={{ color: T.accent, fontWeight: 500 }}>Tip:</span> A complete CV increases your match rate by up to 3×. Make sure your file is up-to-date and under 5 MB.
                 </div>
               </div>
             </Section>
           )}
 
-          {/* ── SKILLS TAB ── */}
+          {/* SKILLS TAB */}
           {tab === "skills" && (
             <Section title="Skills" icon="⚡">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "0.75rem", alignItems: "flex-end", marginBottom: "1.5rem", position: "relative" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "flex-end", marginBottom: 24, position: "relative" }}>
                 <div style={{ position: "relative" }}>
-                  <Input label="ADD SKILL" value={skillInput} onChange={handleSkillInput} placeholder="Type a skill name…" style={{ marginBottom: 0 }} />
-                  {skillSuggestions.length > 0 && (
-                    <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#16161f", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, zIndex: 20, overflow: "hidden" }}>
-                      {skillSuggestions.map(s => (
-                        <div key={s} onClick={() => addSkill(s)} style={{ padding: "0.65rem 1rem", cursor: "pointer", fontSize: "0.875rem", color: "rgba(240,237,232,0.8)", transition: "background 0.15s" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "rgba(108,99,255,0.12)"}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>{s}</div>
+                  <FInput label="Add Skill" value={skillInput} onChange={handleSkillInput} placeholder="Type a skill name…" />
+                  {skillSugg.length > 0 && (
+                    <div style={{ position: "absolute", top: "calc(100% - 16px)", left: 0, right: 0, background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, zIndex: 20, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+                      {skillSugg.map(s => (
+                        <div key={s} onClick={() => addSkill(s)}
+                          style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13.5, color: T.ink70, transition: "all 0.12s", borderLeft: "3px solid transparent" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = T.warm; e.currentTarget.style.borderLeftColor = T.accent; e.currentTarget.style.color = T.ink; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.color = T.ink70; }}>
+                          {s}
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "rgba(240,237,232,0.4)", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>LEVEL</label>
+                  <FieldLabel text="Level" />
                   <select value={skillLevel} onChange={e => setSkillLevel(e.target.value)}
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "0.7rem 0.9rem", color: "#f0ede8", fontSize: "0.875rem", outline: "none", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}>
+                    style={{ ...inputBase, cursor: "pointer", color: T.ink }}>
                     {SKILL_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
                 <button onClick={() => addSkill(skillInput)} disabled={!skillInput.trim()}
-                  style={{ background: skillInput.trim() ? "linear-gradient(135deg, #6c63ff, #3ecfb2)" : "rgba(255,255,255,0.05)", border: "none", borderRadius: 9, padding: "0.7rem 1.25rem", color: skillInput.trim() ? "#fff" : "rgba(240,237,232,0.2)", cursor: skillInput.trim() ? "pointer" : "not-allowed", fontSize: "0.875rem", fontWeight: 500, whiteSpace: "nowrap", marginTop: "1.4rem" }}>Add skill</button>
+                  style={{ padding: "9px 18px", borderRadius: 8, background: skillInput.trim() ? T.ink : T.warm, border: `2px solid ${skillInput.trim() ? T.ink : T.border}`, color: skillInput.trim() ? "#fff" : T.ink25, fontSize: 13.5, fontFamily: T.sans, fontWeight: 500, cursor: skillInput.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap", marginBottom: 1, transition: "all 0.15s" }}
+                  onMouseEnter={e => { if (skillInput.trim()) { e.currentTarget.style.background = T.accent; e.currentTarget.style.borderColor = T.accent; } }}
+                  onMouseLeave={e => { if (skillInput.trim()) { e.currentTarget.style.background = T.ink; e.currentTarget.style.borderColor = T.ink; } }}>
+                  Add skill
+                </button>
               </div>
 
               {skills.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "2.5rem", color: "rgba(240,237,232,0.2)", fontSize: "0.875rem" }}>No skills added yet. Type above to add your first skill.</div>
+                <div style={{ textAlign: "center", padding: "2.5rem", background: T.warm, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink45, fontStyle: "italic", marginBottom: 4 }}>No skills added yet</div>
+                  <div style={{ fontSize: 13, color: T.ink25 }}>Type above to add your first skill.</div>
+                </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   {skills.map(sk => (
-                    <div key={sk.id} style={{ display: "flex", alignItems: "center", gap: "1rem", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 11, padding: "0.75rem 1rem" }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: levelColor(sk.level), flexShrink: 0 }}></div>
-                      <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 500, color: "#f0ede8" }}>{sk.name}</span>
-                      <div style={{ display: "flex", gap: "0.35rem" }}>
+                    <div key={sk.id} style={{ display: "flex", alignItems: "center", gap: 12, background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 14px", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: LEVEL_COLORS[sk.level] || T.ink25, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: T.ink }}>{sk.name}</span>
+                      <div style={{ display: "flex", gap: 5 }}>
                         {SKILL_LEVELS.map(l => (
                           <button key={l} onClick={() => updateSkillLevel(sk.id, l)}
-                            style={{ background: sk.level === l ? levelColor(l) + "22" : "transparent", border: `1px solid ${sk.level === l ? levelColor(l) + "55" : "rgba(255,255,255,0.07)"}`, borderRadius: 100, padding: "0.2rem 0.65rem", fontSize: "0.72rem", color: sk.level === l ? levelColor(l) : "rgba(240,237,232,0.3)", cursor: "pointer", transition: "all 0.15s" }}>
+                            style={{
+                              background: sk.level === l ? LEVEL_COLORS[l] + "18" : "transparent",
+                              border: `1.5px solid ${sk.level === l ? LEVEL_COLORS[l] + "50" : T.border}`,
+                              borderRadius: 100, padding: "2px 9px",
+                              fontSize: 11, fontFamily: T.mono,
+                              color: sk.level === l ? LEVEL_COLORS[l] : T.ink45,
+                              cursor: "pointer", transition: "all 0.12s",
+                            }}>
                             {l}
                           </button>
                         ))}
@@ -499,92 +609,105 @@ export default function ProfilePage({ user, onBack }) {
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ display: "flex", gap: 18, marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
                 {SKILL_LEVELS.map(l => (
-                  <div key={l} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: levelColor(l) }}></div>
-                    <span style={{ fontSize: "0.72rem", color: "rgba(240,237,232,0.3)" }}>{l}</span>
+                  <div key={l} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: LEVEL_COLORS[l] }} />
+                    <span style={{ fontFamily: T.mono, fontSize: 10.5, color: T.ink45 }}>{l}</span>
                   </div>
                 ))}
               </div>
             </Section>
           )}
 
-          {/* ── EDUCATION TAB ── */}
+          {/* EDUCATION TAB */}
           {tab === "education" && (
             <Section title="Education" icon="🎓" action={<AddButton onClick={addEdu} label="Add education" />}>
               {educations.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "2.5rem", color: "rgba(240,237,232,0.2)", fontSize: "0.875rem" }}>No education entries yet.</div>
-              ) : (
-                educations.map((edu, idx) => (
-                  <div key={edu.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "1.25rem", marginBottom: "1rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(108,99,255,0.12)", border: "1px solid rgba(108,99,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem" }}>🎓</div>
-                        <span style={{ fontSize: "0.8rem", color: "rgba(240,237,232,0.35)" }}>Entry {idx + 1}</span>
-                      </div>
-                      <DeleteBtn onClick={() => removeEdu(edu.id)} />
+                <div style={{ textAlign: "center", padding: "2.5rem", background: T.warm, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink45, fontStyle: "italic", marginBottom: 4 }}>No education entries yet</div>
+                  <div style={{ fontSize: 13, color: T.ink25 }}>Click "Add education" to get started.</div>
+                </div>
+              ) : educations.map((edu, idx) => (
+                <div key={edu.id} style={{ background: T.warm, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px 20px", marginBottom: 12, position: "relative" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: T.blueLight, border: `1px solid ${T.blueRule}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎓</div>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: T.ink45, letterSpacing: "0.05em" }}>Entry {idx + 1}</span>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 1.25rem" }}>
-                      <Select label="DEGREE" value={edu.degree} onChange={v => updateEdu(edu.id, "degree", v)} options={DEGREE_OPTIONS} />
-                      <Input label="FIELD OF STUDY" value={edu.field} onChange={v => updateEdu(edu.id, "field", v)} placeholder="e.g. Computer Science" />
-                      <Input label="INSTITUTION" value={edu.school} onChange={v => updateEdu(edu.id, "school", v)} placeholder="University name" />
-                      <Input label="GRADUATION YEAR" value={edu.year} onChange={v => updateEdu(edu.id, "year", v)} placeholder="e.g. 2022" />
-                    </div>
-                    <Textarea label="DESCRIPTION (OPTIONAL)" value={edu.description} onChange={v => updateEdu(edu.id, "description", v)} placeholder="Courses, projects, achievements…" rows={2} />
+                    <DeleteBtn onClick={() => removeEdu(edu.id)} />
                   </div>
-                ))
-              )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                    <FSelect label="Degree"           value={edu.degree}  onChange={v => updateEdu(edu.id, "degree", v)}  options={DEGREE_OPTIONS} />
+                    <FInput  label="Field of Study"   value={edu.field}   onChange={v => updateEdu(edu.id, "field", v)}   placeholder="e.g. Computer Science" />
+                    <FInput  label="Institution"      value={edu.school}  onChange={v => updateEdu(edu.id, "school", v)}  placeholder="University name" />
+                    <FInput  label="Graduation Year"  value={edu.year}    onChange={v => updateEdu(edu.id, "year", v)}    placeholder="e.g. 2022" />
+                  </div>
+                  <FTextarea label="Description (optional)" value={edu.description} onChange={v => updateEdu(edu.id, "description", v)} placeholder="Courses, projects, achievements…" rows={2} />
+                </div>
+              ))}
             </Section>
           )}
 
-          {/* ── EXPERIENCE TAB ── */}
+          {/* EXPERIENCE TAB */}
           {tab === "experience" && (
             <Section title="Professional Experience" icon="💼" action={<AddButton onClick={addExp} label="Add experience" />}>
               {experiences.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "2.5rem", color: "rgba(240,237,232,0.2)", fontSize: "0.875rem" }}>No experience entries yet.</div>
-              ) : (
-                experiences.map((exp, idx) => (
-                  <div key={exp.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "1.25rem", marginBottom: "1rem", position: "relative" }}>
-                    {idx < experiences.length - 1 && (
-                      <div style={{ position: "absolute", left: -1, top: "100%", width: 1, height: "1rem", background: "rgba(108,99,255,0.2)" }}></div>
-                    )}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(62,207,178,0.1)", border: "1px solid rgba(62,207,178,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem" }}>💼</div>
-                        <span style={{ fontSize: "0.8rem", color: "rgba(240,237,232,0.35)" }}>Experience {idx + 1}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem", color: "rgba(240,237,232,0.4)", cursor: "pointer" }}>
-                          <input type="checkbox" checked={exp.current} onChange={e => updateExp(exp.id, "current", e.target.checked)}
-                            style={{ accentColor: "#3ecfb2" }} />
-                          Current job
-                        </label>
-                        <DeleteBtn onClick={() => removeExp(exp.id)} />
-                      </div>
+                <div style={{ textAlign: "center", padding: "2.5rem", background: T.warm, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink45, fontStyle: "italic", marginBottom: 4 }}>No experience entries yet</div>
+                  <div style={{ fontSize: 13, color: T.ink25 }}>Click "Add experience" to get started.</div>
+                </div>
+              ) : experiences.map((exp, idx) => (
+                <div key={exp.id} style={{ background: T.warm, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px 20px", marginBottom: 12, position: "relative" }}>
+                  {idx < experiences.length - 1 && (
+                    <div style={{ position: "absolute", left: 29, top: "100%", width: 1, height: 12, background: T.border2 }} />
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: T.accentLight, border: `1px solid ${T.accentRule}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>💼</div>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: T.ink45, letterSpacing: "0.05em" }}>Experience {idx + 1}</span>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 1.25rem" }}>
-                      <Input label="JOB TITLE" value={exp.role} onChange={v => updateExp(exp.id, "role", v)} placeholder="e.g. Frontend Developer" />
-                      <Input label="COMPANY" value={exp.company} onChange={v => updateExp(exp.id, "company", v)} placeholder="Company name" />
-                      <Input label="START DATE" value={exp.start} onChange={v => updateExp(exp.id, "start", v)} placeholder="e.g. Jan 2022" />
-                      <Input label="END DATE" value={exp.end} onChange={v => updateExp(exp.id, "end", v)} placeholder={exp.current ? "Present" : "e.g. Dec 2023"} style={{ opacity: exp.current ? 0.4 : 1, pointerEvents: exp.current ? "none" : "auto" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.ink70, cursor: "pointer" }}>
+                        <input type="checkbox" checked={exp.current} onChange={e => updateExp(exp.id, "current", e.target.checked)}
+                          style={{ accentColor: T.accent, width: 14, height: 14, cursor: "pointer" }} />
+                        Current job
+                      </label>
+                      <DeleteBtn onClick={() => removeExp(exp.id)} />
                     </div>
-                    <Textarea label="DESCRIPTION" value={exp.description} onChange={v => updateExp(exp.id, "description", v)} placeholder="Describe your responsibilities, achievements, and technologies used…" rows={3} />
                   </div>
-                ))
-              )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                    <FInput label="Job Title"   value={exp.role}    onChange={v => updateExp(exp.id, "role", v)}    placeholder="e.g. Frontend Developer" />
+                    <FInput label="Company"     value={exp.company} onChange={v => updateExp(exp.id, "company", v)} placeholder="Company name" />
+                    <FInput label="Start Date"  value={exp.start}   onChange={v => updateExp(exp.id, "start", v)}   placeholder="e.g. Jan 2022" />
+                    <FInput label="End Date"    value={exp.end}     onChange={v => updateExp(exp.id, "end", v)}     placeholder={exp.current ? "Present" : "e.g. Dec 2023"} disabled={exp.current} />
+                  </div>
+                  <FTextarea label="Description" value={exp.description} onChange={v => updateExp(exp.id, "description", v)} placeholder="Describe your responsibilities, achievements, and technologies used…" rows={3} />
+                </div>
+              ))}
             </Section>
           )}
 
-          {/* ── SAVE BUTTON ── */}
-          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem" }}>
-            {saveMsg && <span style={{ fontSize: "0.85rem", color: saveMsg.startsWith("Failed") ? "#e87885" : "#3ecfb2" }}>{saveMsg}</span>}
-            <button onClick={() => window.location.reload()} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "0.75rem 1.5rem", color: "rgba(240,237,232,0.4)", cursor: "pointer", fontSize: "0.875rem" }}>Discard changes</button>
-            <button onClick={handleSave} disabled={saving} style={{ background: saving ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6c63ff, #3ecfb2)", border: "none", borderRadius: 10, padding: "0.75rem 2rem", color: saving ? "rgba(240,237,232,0.3)" : "#fff", cursor: saving ? "not-allowed" : "pointer", fontSize: "0.875rem", fontWeight: 600 }}>
-              {saving ? "Saving…" : "Save & update profile"}
+          {/* Save bar */}
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginTop: 4 }}>
+            {saveMsg && (
+              <span style={{ fontFamily: T.mono, fontSize: 12, color: saveMsg.startsWith("Failed") ? "#b91c1c" : T.green, letterSpacing: "0.04em" }}>
+                {saveMsg}
+              </span>
+            )}
+            <button onClick={() => window.location.reload()}
+              style={{ padding: "10px 18px", borderRadius: 8, background: "transparent", border: `1.5px solid ${T.border}`, color: T.ink70, fontSize: 13.5, fontFamily: T.sans, cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = T.warm; e.currentTarget.style.borderColor = T.border2; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = T.border; }}>
+              Discard changes
+            </button>
+            <button onClick={handleSave} disabled={saving}
+              style={{ padding: "10px 22px", borderRadius: 8, background: saving ? T.warm : T.ink, border: `2px solid ${saving ? T.border : T.ink}`, color: saving ? T.ink45 : "#fff", fontSize: 13.5, fontFamily: T.sans, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8 }}
+              onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = T.accent; e.currentTarget.style.borderColor = T.accent; } }}
+              onMouseLeave={e => { if (!saving) { e.currentTarget.style.background = T.ink; e.currentTarget.style.borderColor = T.ink; } }}>
+              {saving ? "Saving…" : <> Save & update profile <ArrowRight /></>}
             </button>
           </div>
-
         </div>
       </div>
     </div>

@@ -1,50 +1,102 @@
 const API_URL = "/backend";
 
+// ── Helper to parse response safely ────────────────────────────────────────────
+async function parseResponse(res) {
+  const contentType = res.headers.get("content-type");
+  let data;
+  
+  try {
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      console.warn(`[API] Non-JSON response (${res.status}):`, text);
+      data = { detail: text || `HTTP ${res.status}` };
+    }
+  } catch (err) {
+    console.error(`[API] Failed to parse response:`, err);
+    data = { detail: `Failed to parse response: ${err.message}` };
+  }
+  
+  return { res, data };
+}
+
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 export async function apiRegister(username, email, password) {
+  console.log("[API] POST /auth/register", { username, email });
   const res = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, email, password }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Registration failed");
+  
+  const { data } = await parseResponse(res);
+  
+  if (!res.ok) {
+    const errorMsg = data.detail || "Registration failed";
+    console.error("[API] Registration error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  
+  console.log("[API] Registration success");
   return data; // { token, username, email }
 }
 
 export async function apiLogin(email, password) {
+  console.log("[API] POST /auth/login", { email });
   const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Login failed");
+  
+  const { data } = await parseResponse(res);
+  
+  if (!res.ok) {
+    const errorMsg = data.detail || "Login failed";
+    console.error("[API] Login error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  
+  console.log("[API] Login success");
   return data; // { token, username, email }
 }
 
 // ── Profile helpers ───────────────────────────────────────────────────────────
 export async function apiGetProfile(token) {
+  console.log("[API] GET /auth/profile");
   const res = await fetch(`${API_URL}/auth/profile`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to load profile");
+  const { data } = await parseResponse(res);
+  if (!res.ok) {
+    const errorMsg = data.detail || "Failed to load profile";
+    console.error("[API] Get profile error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] Profile loaded");
   return data;
 }
 
 export async function apiSaveProfile(token, profile) {
+  console.log("[API] PUT /auth/profile");
   const res = await fetch(`${API_URL}/auth/profile`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(profile),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to save profile");
+  const { data } = await parseResponse(res);
+  if (!res.ok) {
+    const errorMsg = data.detail || "Failed to save profile";
+    console.error("[API] Save profile error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] Profile saved");
   return data;
 }
 
 export async function apiUploadCV(token, file) {
+  console.log("[API] POST /auth/profile/upload-cv", { fileName: file.name });
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${API_URL}/auth/profile/upload-cv`, {
@@ -52,12 +104,18 @@ export async function apiUploadCV(token, file) {
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "CV upload failed");
+  const { data } = await parseResponse(res);
+  if (!res.ok) {
+    const errorMsg = data.detail || "CV upload failed";
+    console.error("[API] Upload CV error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] CV uploaded successfully");
   return data; // { path, filename }
 }
 
 export async function apiUploadCover(token, file) {
+  console.log("[API] POST /auth/profile/upload-cover", { fileName: file.name });
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${API_URL}/auth/profile/upload-cover`, {
@@ -65,25 +123,44 @@ export async function apiUploadCover(token, file) {
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Cover letter upload failed");
+  const { data } = await parseResponse(res);
+  if (!res.ok) {
+    const errorMsg = data.detail || "Cover letter upload failed";
+    console.error("[API] Upload cover error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] Cover letter uploaded successfully");
   return data; // { path, filename }
 }
 
 export async function apiDeleteCV(token) {
+  console.log("[API] DELETE /auth/profile/upload-cv");
   const res = await fetch(`${API_URL}/auth/profile/upload-cv`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to remove CV");
+  if (!res.ok) {
+    const { data } = await parseResponse(res);
+    const errorMsg = data.detail || "Failed to remove CV";
+    console.error("[API] Delete CV error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] CV deleted successfully");
 }
 
 export async function apiDeleteCover(token) {
+  console.log("[API] DELETE /auth/profile/upload-cover");
   const res = await fetch(`${API_URL}/auth/profile/upload-cover`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to remove cover letter");
+  if (!res.ok) {
+    const { data } = await parseResponse(res);
+    const errorMsg = data.detail || "Failed to remove cover letter";
+    console.error("[API] Delete cover error:", errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] Cover letter deleted successfully");
 }
 
 
@@ -191,15 +268,22 @@ export async function predictJobs(formData) {
       job_type_skills:       buildJobTypeSkills(formData.skills || []),
     };
 
+    console.log("[API] POST /predict", payload);
     const response = await fetch(`${API_URL}/predict`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) throw new Error("Server error");
+    const { data } = await parseResponse(response);
 
-    const data = await response.json();
+    if (!response.ok) {
+      const errorMsg = data.detail || "Prediction failed";
+      console.error("[API] Predict error:", errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    console.log("[API] Prediction successful");
 
     const predictions = Object.entries(data.probabilities)
       .map(([job, score]) => ({
@@ -215,17 +299,20 @@ export async function predictJobs(formData) {
     };
 
   } catch (error) {
-    console.error("API error:", error);
-    throw new Error("Backend is offline. Please start the server.");
+    console.error("[API] Predict error:", error);
+    throw new Error(error.message || "Backend is offline. Please start the server.");
   }
 }
 
 export async function checkHealth() {
   try {
-    const res  = await fetch(`${API_URL}/health`);
-    const data = await res.json();
-    return data.model_loaded;
-  } catch {
+    console.log("[API] GET /health");
+    const res = await fetch(`${API_URL}/health`);
+    const { data } = await parseResponse(res);
+    console.log("[API] Health check:", data);
+    return data.model_loaded || false;
+  } catch (error) {
+    console.error("[API] Health check failed:", error);
     return false;
   }
 }

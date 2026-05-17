@@ -14,8 +14,8 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from model import CVSkillsPayload, ProfilePayload, WebhookPayload
-from service import (
+from .model import CVSkillsPayload, ProfilePayload, WebhookPayload
+from .service import (
     JOBS_JSON_PATH,
     extract_skills_from_profile,
     get_stored_recommendations,

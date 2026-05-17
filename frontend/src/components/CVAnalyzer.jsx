@@ -2,46 +2,23 @@ import { useState, useRef, useEffect } from "react";
 import { apiGetProfile } from "../services/api";
 
 const WEBHOOK_URL = "http://localhost:5678/webhook-test/c9ef6c41-8ef7-443c-8b23-fc72c30a270d";
-// Recommender FastAPI (`job_recommendation/recommender/controller.py`).
-//  - In docker: nginx proxies /recommender/ -> http://recommender:8001 (see nginx.conf)
-//  - In `npm start` dev mode: hit the container / local uvicorn directly on :8001
 const RECOMMENDER_URL =
   process.env.NODE_ENV === "production"
     ? "/recommender/webhook/cv-recommendations"
     : "http://localhost:8001/webhook/cv-recommendations";
 
 const JOB_EMOJIS = {
-  "Data Engineer":        "⚙️",
-  "Data Scientist":       "🔬",
-  "Data Analyst":         "📊",
-  "Business Analyst":     "💼",
-  "Software Engineer":    "💻",
-  "Cloud Engineer":       "☁️",
-  "ML Engineer":          "🤖",
-  "IoT":                  "📡",
-  "DevOps":               "🔧",
-  "Full-Stack":           "🖥️",
-  "Automation":           "⚡",
-};
-
-const T = {
-  bg: "#0a0a0f",
-  surface: "rgba(255,255,255,0.025)",
-  surfaceAlt: "rgba(255,255,255,0.04)",
-  border: "rgba(255,255,255,0.07)",
-  borderAlt: "rgba(255,255,255,0.1)",
-  text: "#f0ede8",
-  textMuted: "rgba(240,237,232,0.45)",
-  textDim: "rgba(240,237,232,0.35)",
-  purple: "#6c63ff",
-  purpleLight: "#a098ff",
-  purpleDim: "rgba(108,99,255,0.1)",
-  purpleBorder: "rgba(108,99,255,0.25)",
-  teal: "#3ecfb2",
-  tealDim: "rgba(62,207,178,0.1)",
-  tealBorder: "rgba(62,207,178,0.2)",
-  grad: "linear-gradient(135deg, #6c63ff, #3ecfb2)",
-  gradText: "linear-gradient(90deg, #c8c0ff, #3ecfb2)",
+  "Data Engineer":     "⚙️",
+  "Data Scientist":    "🔬",
+  "Data Analyst":      "📊",
+  "Business Analyst":  "💼",
+  "Software Engineer": "💻",
+  "Cloud Engineer":    "☁️",
+  "ML Engineer":       "🤖",
+  "IoT":               "📡",
+  "DevOps":            "🔧",
+  "Full-Stack":        "🖥️",
+  "Automation":        "⚡",
 };
 
 function getEmoji(title) {
@@ -51,20 +28,491 @@ function getEmoji(title) {
   return "🏆";
 }
 
+/* ─── CSS ────────────────────────────────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --white:   #ffffff;
+    --paper:   #fafaf9;
+    --warm:    #f5f3ef;
+    --warm2:   #ede9e1;
+    --border:  #e2ddd6;
+    --border2: #ccc7bf;
+    --ink:     #1a1814;
+    --ink-70:  rgba(26,24,20,0.7);
+    --ink-45:  rgba(26,24,20,0.45);
+    --ink-25:  rgba(26,24,20,0.25);
+    --ink-10:  rgba(26,24,20,0.08);
+    --ink-5:   rgba(26,24,20,0.04);
+
+    --accent:       #c8490a;
+    --accent-light: #fff3ee;
+    --accent-rule:  #fbd0b8;
+    --accent-dark:  #9a3208;
+
+    --teal:       #0d6e64;
+    --teal-light: rgba(13,110,100,0.08);
+    --teal-rule:  rgba(13,110,100,0.2);
+
+    --green:       #166534;
+    --green-light: rgba(22,101,52,0.08);
+    --green-rule:  rgba(22,101,52,0.2);
+
+    --amber:       #b45309;
+    --amber-light: rgba(180,83,9,0.08);
+    --amber-rule:  rgba(180,83,9,0.2);
+
+    --red:       #b91c1c;
+    --red-light: rgba(185,28,28,0.08);
+    --red-rule:  rgba(185,28,28,0.2);
+
+    --r-xs: 4px;
+    --r-sm: 8px;
+    --r:    14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans:  'DM Sans', system-ui, sans-serif;
+    --mono:  'DM Mono', monospace;
+
+    --sh-sm: 0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --sh:    0 4px 20px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04);
+    --sh-lg: 0 20px 56px rgba(0,0,0,0.1), 0 6px 16px rgba(0,0,0,0.06);
+  }
+
+  /* ── Root layout ── */
+  .cv-root {
+    min-height: 100vh;
+    background: var(--paper);
+    font-family: var(--sans);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 24px 120px;
+    position: relative;
+  }
+
+  /* Subtle dot-grid texture */
+  .cv-root::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .cv-inner {
+    width: 100%; max-width: 680px; position: relative;
+  }
+
+  /* ── Header ── */
+  .cv-header { margin-bottom: 56px; }
+
+  .cv-kicker {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .cv-kicker-line { width: 28px; height: 2px; background: var(--accent); border-radius: 1px; }
+  .cv-kicker-text {
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 500;
+  }
+
+  .cv-title {
+    font-family: var(--serif);
+    font-size: clamp(36px, 5vw, 54px);
+    font-weight: 400; line-height: 1.08;
+    letter-spacing: -0.02em; color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .cv-title em { font-style: italic; color: var(--accent); }
+
+  .cv-subtitle {
+    font-size: 15px; color: var(--ink-70);
+    line-height: 1.7; max-width: 460px; font-weight: 300;
+  }
+
+  /* ── Card shell ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh);
+    overflow: hidden;
+    position: relative;
+  }
+  /* Accent top stripe on every card */
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+
+  .card-header {
+    padding: 20px 26px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 3px; /* offset the accent stripe */
+  }
+  .card-header-title {
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-45);
+  }
+
+  .card-body { padding: 26px; }
+
+  /* ── Badge pill ── */
+  .badge-pill {
+    padding: 3px 10px; border-radius: 100px;
+    font-size: 11px; font-family: var(--mono);
+    background: var(--warm); border: 1px solid var(--border);
+    color: var(--ink-45);
+  }
+
+  /* ── Profile banner ── */
+  .profile-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border-radius: var(--r);
+    border: 1px solid var(--border); background: var(--warm);
+    margin-bottom: 18px; transition: all 0.2s;
+  }
+  .profile-banner.active {
+    background: var(--teal-light); border-color: var(--teal-rule);
+  }
+  .profile-banner-info { display: flex; align-items: center; gap: 12px; }
+  .profile-banner-icon {
+    width: 36px; height: 36px; border-radius: var(--r-sm);
+    background: var(--white); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .profile-banner-label {
+    font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px;
+  }
+  .profile-banner-label.active { color: var(--teal); }
+  .profile-banner-filename {
+    font-size: 11px; color: var(--ink-45); font-family: var(--mono);
+  }
+
+  .btn-ghost {
+    padding: 6px 14px; border-radius: var(--r-sm);
+    background: var(--white); border: 1px solid var(--border);
+    color: var(--ink-70); font-size: 12px; font-family: var(--sans);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--ink); background: var(--warm); }
+
+  /* ── Drop zone ── */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: var(--r-lg);
+    padding: 52px 32px; text-align: center;
+    cursor: pointer; background: var(--warm);
+    transition: all 0.22s; margin-bottom: 22px;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--accent); background: var(--accent-light);
+  }
+  .dropzone.has-file {
+    border-style: solid; border-color: var(--teal-rule);
+    background: var(--teal-light); cursor: default; padding: 28px 32px;
+  }
+
+  .dropzone-icon {
+    width: 56px; height: 56px; border-radius: var(--r);
+    background: var(--white); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin: 0 auto 16px; box-shadow: var(--sh-sm);
+  }
+  .dropzone-title { font-size: 15px; font-weight: 500; margin-bottom: 5px; color: var(--ink); font-family: var(--sans); }
+  .dropzone-sub { font-size: 13px; color: var(--ink-45); font-weight: 300; }
+
+  .file-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 12px; background: var(--white);
+    border: 1px solid var(--teal-rule); border-radius: 100px;
+    font-size: 12px; font-family: var(--mono); color: var(--teal); margin-top: 12px;
+  }
+
+  .btn-remove {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--r-sm);
+    background: transparent; border: 1px solid var(--red-rule);
+    color: var(--red); font-size: 12px; cursor: pointer;
+    margin-top: 12px; transition: all 0.15s;
+  }
+  .btn-remove:hover { background: var(--red-light); }
+
+  /* ── Progress ── */
+  .progress-wrap { margin-bottom: 22px; }
+  .progress-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--ink-45);
+    margin-bottom: 8px; font-family: var(--mono);
+  }
+  .progress-track {
+    width: 100%; height: 4px;
+    background: var(--warm2); border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--teal));
+    border-radius: 2px; transition: width 0.3s ease;
+  }
+
+  /* ── Error ── */
+  .error-box {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 16px; border-radius: var(--r);
+    background: var(--red-light); border: 1px solid var(--red-rule);
+    color: var(--red); font-size: 13px; margin-bottom: 20px; line-height: 1.5;
+  }
+
+  /* ── Primary button ── */
+  .btn-primary {
+    width: 100%; padding: 14px; border-radius: var(--r-sm);
+    background: var(--ink); border: 2px solid var(--ink);
+    color: #fff; font-family: var(--sans); font-weight: 500;
+    font-size: 15px; letter-spacing: 0.01em;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent); border-color: var(--accent);
+    box-shadow: 0 6px 20px rgba(200,73,10,0.3);
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .btn-primary svg { transition: transform 0.2s; }
+  .btn-primary:hover:not(:disabled) svg { transform: translateX(3px); }
+
+  /* ── Section label ── */
+  .section-label {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-25); margin-bottom: 14px;
+  }
+  .section-label::before {
+    content: ''; display: inline-block;
+    width: 14px; height: 2px;
+    background: var(--accent); border-radius: 1px; flex-shrink: 0;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── Result hero ── */
+  .result-hero {
+    background: var(--ink);
+    border-radius: var(--r); padding: 28px;
+    margin-bottom: 20px; position: relative; overflow: hidden;
+  }
+  /* Decorative circle */
+  .result-hero::after {
+    content: '';
+    position: absolute; bottom: -50px; right: -50px;
+    width: 160px; height: 160px; border-radius: 50%;
+    border: 28px solid rgba(255,255,255,0.04); pointer-events: none;
+  }
+  .result-hero-eye {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35); margin-bottom: 8px;
+  }
+  .result-hero-role {
+    font-family: var(--serif); font-size: 32px;
+    font-weight: 400; font-style: italic;
+    color: #fff; margin-bottom: 12px; line-height: 1.2;
+  }
+  .result-hero-salary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 13px; border-radius: 100px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    font-size: 12px; color: rgba(255,255,255,0.7);
+    font-family: var(--mono); margin-bottom: 12px;
+  }
+  .result-hero-exp {
+    font-size: 13.5px; color: rgba(255,255,255,0.5);
+    line-height: 1.72; max-width: 520px; font-weight: 300;
+  }
+
+  /* ── Jobs table ── */
+  .jobs-table {
+    border: 1px solid var(--border); border-radius: var(--r);
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .jobs-table-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .jobs-table-row:last-child { border-bottom: none; }
+  .jobs-table-row:hover { background: var(--warm); }
+
+  .jobs-table-rank {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-25); width: 18px; flex-shrink: 0; text-align: right;
+  }
+  .jobs-table-emoji { font-size: 18px; flex-shrink: 0; }
+  .jobs-table-name  { font-size: 14px; font-weight: 500; flex: 1; }
+  .jobs-table-salary {
+    font-size: 12px; font-family: var(--mono);
+    color: var(--teal); white-space: nowrap;
+  }
+  .jobs-table-bar-wrap { width: 60px; flex-shrink: 0; }
+  .jobs-table-bar-track { width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+  .jobs-table-bar-fill  { height: 100%; background: var(--accent); border-radius: 2px; }
+
+  /* ── Skills ── */
+  .skills-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skill-tag {
+    padding: 4px 10px; border-radius: 4px;
+    background: var(--warm); border: 1px solid var(--border);
+    font-size: 12px; font-family: var(--mono);
+    color: var(--ink-70); transition: all 0.15s;
+  }
+  .skill-tag:hover { background: var(--warm2); color: var(--ink); border-color: var(--border2); }
+
+  /* ── Career advice ── */
+  .advice-box {
+    background: var(--warm); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--r-sm); padding: 16px 18px;
+    font-size: 14px; color: var(--ink-70); line-height: 1.8; font-weight: 300;
+  }
+
+  /* ── Match cards ── */
+  .match-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 20px;
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .match-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: transparent; transition: background 0.2s;
+  }
+  .match-card:hover { box-shadow: var(--sh); border-color: var(--border2); }
+  .match-card:hover::after { background: var(--accent); }
+
+  .match-card-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px; margin-bottom: 12px;
+  }
+  .match-card-main { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+  .match-card-emoji { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .match-card-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .match-card-meta  { font-size: 12px; color: var(--ink-45); }
+
+  .match-badge {
+    padding: 4px 10px; border-radius: var(--r-xs);
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid var(--accent-rule); white-space: nowrap; flex-shrink: 0;
+  }
+
+  .match-bar-track {
+    width: 100%; height: 3px; background: var(--border);
+    border-radius: 2px; margin-bottom: 14px; overflow: hidden;
+  }
+  .match-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--teal));
+    border-radius: 2px; transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .tags-label {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-25); margin-bottom: 6px; margin-top: 12px;
+  }
+  .tag-matched {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: var(--r-xs);
+    font-size: 11px; font-family: var(--mono);
+    background: var(--green-light); border: 1px solid var(--green-rule);
+    color: var(--green); margin: 3px 3px 0 0;
+  }
+  .tag-missing {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: var(--r-xs);
+    font-size: 11px; font-family: var(--mono);
+    background: var(--amber-light); border: 1px solid var(--amber-rule);
+    color: var(--amber); margin: 3px 3px 0 0;
+  }
+
+  .apply-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 16px; padding: 9px 18px; border-radius: var(--r-sm);
+    background: var(--ink); color: #fff; font-size: 13px; font-weight: 500;
+    text-decoration: none; transition: all 0.18s; font-family: var(--sans);
+  }
+  .apply-btn:hover {
+    background: var(--accent);
+    box-shadow: 0 4px 14px rgba(200,73,10,0.28);
+    transform: translateY(-1px);
+  }
+  .apply-btn svg { transition: transform 0.18s; }
+  .apply-btn:hover svg { transform: translateX(3px); }
+
+  /* ── Warning ── */
+  .warning-box {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 16px; border-radius: var(--r);
+    background: var(--amber-light); border: 1px solid var(--amber-rule);
+    color: var(--amber); font-size: 13px; margin-top: 16px; line-height: 1.5;
+  }
+
+  /* ── Raw fallback ── */
+  .raw-box {
+    background: var(--warm); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 16px; font-size: 12px; font-family: var(--mono); color: var(--ink-70);
+    white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow: auto;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .anim    { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+  .anim-d1 { animation-delay: 0.06s; }
+  .anim-d2 { animation-delay: 0.12s; }
+  .anim-d3 { animation-delay: 0.18s; }
+`;
+
+const ArrowRight = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+/* ═══════════════════════════════════════════════════════════════════ */
+
 export default function CVAnalyzer({ user }) {
-  const [file, setFile]           = useState(null);
-  const [profileCv, setProfileCv] = useState(null); // { path, filename } from profile
+  const [file,         setFile]         = useState(null);
+  const [profileCv,    setProfileCv]    = useState(null);
   const [useProfileCv, setUseProfileCv] = useState(false);
-  const [dragging, setDragging]   = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);
-  const [jobMatches, setJobMatches] = useState(null);
+  const [dragging,     setDragging]     = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [result,       setResult]       = useState(null);
+  const [jobMatches,   setJobMatches]   = useState(null);
   const [matchWarning, setMatchWarning] = useState(null);
-  const [error, setError]         = useState(null);
-  const [progress, setProgress]   = useState(0);
+  const [error,        setError]        = useState(null);
+  const [progress,     setProgress]     = useState(0);
   const inputRef = useRef(null);
 
-  // Auto-load CV from profile if user has one saved
   useEffect(() => {
     if (!user?.token) return;
     apiGetProfile(user.token)
@@ -90,14 +538,8 @@ export default function CVAnalyzer({ user }) {
     handleFile(e.dataTransfer.files[0]);
   };
 
-  // Flatten whatever shape the N8N agent returns into a plain list of skill strings
   const extractSkillStrings = (parsed) => {
-    const raw =
-      parsed?.top_skills ||
-      parsed?.topSkills  ||
-      parsed?.skills     ||
-      parsed?.matched_skills ||
-      [];
+    const raw = parsed?.top_skills || parsed?.topSkills || parsed?.skills || parsed?.matched_skills || [];
     if (!Array.isArray(raw)) return [];
     return raw
       .map((s) => {
@@ -105,8 +547,7 @@ export default function CVAnalyzer({ user }) {
         if (s && typeof s === "object") return s.name || s.skill || s.title || "";
         return String(s || "");
       })
-      .map((s) => s.trim())
-      .filter(Boolean);
+      .map((s) => s.trim()).filter(Boolean);
   };
 
   const fetchJobMatches = async (skills) => {
@@ -124,77 +565,45 @@ export default function CVAnalyzer({ user }) {
       const data = await res.json();
       setJobMatches(data.recommendations || []);
     } catch (err) {
-      setMatchWarning(
-        `Could not reach the job recommender (${err.message}). ` +
-        `Make sure controller.py is running on port 8000.`
-      );
+      setMatchWarning(`Could not reach the job recommender (${err.message}). Make sure controller.py is running on port 8000.`);
     }
   };
 
   const handleAnalyze = async () => {
     if (!file && !useProfileCv) { setError("Please upload your CV first."); return; }
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setJobMatches(null);
-    setMatchWarning(null);
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      setProgress((p) => (p < 85 ? p + 5 : p));
-    }, 300);
-
+    setLoading(true); setError(null); setResult(null); setJobMatches(null); setMatchWarning(null); setProgress(0);
+    const interval = setInterval(() => setProgress((p) => (p < 85 ? p + 5 : p)), 300);
     try {
       let cvFile = file;
-
-      // If using profile CV, fetch the file blob from the server
       if (useProfileCv && !file) {
         const res = await fetch(`/backend${profileCv.path}`);
         if (!res.ok) throw new Error("Could not load CV from profile");
         const blob = await res.blob();
         cvFile = new File([blob], profileCv.filename, { type: "application/pdf" });
       }
-
       const formData = new FormData();
       formData.append("file", cvFile, cvFile.name);
       formData.append("sessionId", `user-${Date.now()}`);
-
       const response = await fetch(WEBHOOK_URL, { method: "POST", body: formData });
       clearInterval(interval); setProgress(100);
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
       const text = await response.text();
-
-      // Step 1: unwrap n8n's { output: "..." } wrapper if present
       let raw = text;
       try {
         const outer = JSON.parse(text);
         raw = outer.output ?? outer.text ?? outer.result ?? outer.message ?? text;
-      } catch { /* not a JSON wrapper, use raw text */ }
-
-      // Step 2: clean markdown code fences Groq sometimes adds
-      const cleaned = (typeof raw === "string" ? raw : JSON.stringify(raw))
-        .replace(/```json|```/g, "").trim();
-
-      // Step 3: parse the actual result
+      } catch { /* not JSON wrapper */ }
+      const cleaned = (typeof raw === "string" ? raw : JSON.stringify(raw)).replace(/```json|```/g, "").trim();
       let parsed;
       try {
         parsed = JSON.parse(cleaned);
       } catch {
         const match = cleaned.match(/\{[\s\S]*\}/);
-        if (match) {
-          try { parsed = JSON.parse(match[0]); }
-          catch { parsed = { raw: cleaned }; }
-        } else {
-          parsed = { raw: cleaned };
-        }
+        if (match) { try { parsed = JSON.parse(match[0]); } catch { parsed = { raw: cleaned }; } }
+        else { parsed = { raw: cleaned }; }
       }
-
       setResult(parsed);
-
-      // Step 4: feed the extracted skills into our recommender to get real job matches
-      const skills = extractSkillStrings(parsed);
-      await fetchJobMatches(skills);
+      await fetchJobMatches(extractSkillStrings(parsed));
     } catch (err) {
       clearInterval(interval);
       setError(`Failed to analyze CV: ${err.message}`);
@@ -205,425 +614,318 @@ export default function CVAnalyzer({ user }) {
   };
 
   const handleReset = () => {
-    setFile(null);
-    setResult(null);
-    setError(null);
-    setJobMatches(null);
-    setMatchWarning(null);
-    setProgress(0);
+    setFile(null); setResult(null); setError(null);
+    setJobMatches(null); setMatchWarning(null); setProgress(0);
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: T.bg,
-      fontFamily: "'DM Sans', sans-serif",
-      color: T.text,
-      display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "60px 24px",
-    }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-      {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 18,
-          background: T.grad,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 30, margin: "0 auto 16px",
-          boxShadow: "0 8px 32px rgba(108,99,255,0.35)",
-        }}>📄</div>
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 30, letterSpacing: "-0.02em", margin: "0 0 8px", background: T.gradText, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>CV Job Analyzer</h1>
-        <p style={{ color: T.textMuted, fontSize: 14, margin: 0 }}>
-          Upload your CV and let AI find your best matching job
-        </p>
-      </div>
+    <>
+      <style>{CSS}</style>
+      <div className="cv-root">
+        <div className="cv-inner">
 
-      <div style={{ width: "100%", maxWidth: 680 }}>
-      {/* Profile CV banner */}
-        {profileCv && (
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            background: useProfileCv ? T.tealDim : T.surfaceAlt,
-            border: `1px solid ${useProfileCv ? T.tealBorder : T.borderAlt}`,
-            borderRadius: 12, padding: "0.75rem 1.1rem", marginBottom: 16,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-              <span style={{ fontSize: "1.2rem" }}>📎</span>
-              <div>
-                <div style={{ fontSize: "0.85rem", fontWeight: 500, color: useProfileCv ? T.teal : T.textMuted }}>
-                  {useProfileCv ? "Using CV from your profile" : "CV from your profile available"}
-                </div>
-                <div style={{ fontSize: "0.75rem", color: T.textDim }}>{profileCv.filename}</div>
-              </div>
+          {/* ── Header ── */}
+          <header className="cv-header">
+            <div className="cv-kicker">
+              <span className="cv-kicker-line" />
+              <span className="cv-kicker-text">AI-Powered Career Tool</span>
             </div>
-            <button
-              onClick={() => { setUseProfileCv(!useProfileCv); if (!useProfileCv) setFile(null); }}
-              style={{ background: useProfileCv ? T.surfaceAlt : T.tealDim, border: `1px solid ${useProfileCv ? T.borderAlt : T.tealBorder}`, borderRadius: 8, padding: "0.35rem 0.85rem", color: useProfileCv ? T.textMuted : T.teal, cursor: "pointer", fontSize: "0.78rem" }}>
-              {useProfileCv ? "Use different file" : "Use this CV"}
-            </button>
-          </div>
-        )}
+            <h1 className="cv-title">
+              Analyze Your CV,<br /><em>Find Your Role</em>
+            </h1>
+            <p className="cv-subtitle">
+              Upload your résumé and let our AI surface the most fitting job titles,
+              salary benchmarks, and skill gaps in seconds.
+            </p>
+          </header>
 
-        {/* Drop Zone — hidden when using profile CV */}
-        {!useProfileCv && (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => !file && inputRef.current.click()}
-          style={{
-            border: `2px dashed ${dragging ? T.purpleLight : file ? T.teal : "rgba(255,255,255,0.15)"}`,
-            borderRadius: 18, padding: "48px 32px", textAlign: "center",
-            cursor: file ? "default" : "pointer",
-            background: dragging ? T.purpleDim : file ? T.tealDim : T.surface,
-            transition: "all 0.2s", marginBottom: 20,
-          }}
-        >
-          <input ref={inputRef} type="file" accept=".pdf" style={{ display: "none" }}
-            onChange={(e) => handleFile(e.target.files[0])} />
-          {!file ? (
-            <>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📂</div>
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Drop your CV here</div>
-              <div style={{ fontSize: 13, color: T.textDim }}>or click to browse - PDF only</div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: T.teal, marginBottom: 4 }}>{file.name}</div>
-              <div style={{ fontSize: 12, color: T.textDim, marginBottom: 16 }}>
-                {(file.size / 1024).toFixed(1)} KB · PDF
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); handleReset(); }} style={{
-                padding: "6px 16px", borderRadius: 20,
-                background: "rgba(232,120,133,0.15)", border: "1px solid rgba(232,120,133,0.3)",
-                color: "#e87885", fontSize: 12, cursor: "pointer",
-              }}>✕ Remove</button>
-            </>
+          {/* ── Upload card ── */}
+          <div className="card anim" style={{ marginBottom: 16 }}>
+            <div className="card-header">
+              <span className="card-header-title">01 — Upload Résumé</span>
+              <span className="badge-pill">PDF only</span>
+            </div>
+            <div className="card-body">
+
+              {/* Profile CV banner */}
+              {profileCv && (
+                <div className={`profile-banner${useProfileCv ? " active" : ""}`}>
+                  <div className="profile-banner-info">
+                    <div className="profile-banner-icon">📎</div>
+                    <div>
+                      <div className={`profile-banner-label${useProfileCv ? " active" : ""}`}>
+                        {useProfileCv ? "Using CV from your profile" : "Profile CV available"}
+                      </div>
+                      <div className="profile-banner-filename">{profileCv.filename}</div>
+                    </div>
+                  </div>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => { setUseProfileCv(!useProfileCv); if (!useProfileCv) setFile(null); }}
+                  >
+                    {useProfileCv ? "Use different file" : "Use this CV"}
+                  </button>
+                </div>
+              )}
+
+              {/* Drop zone */}
+              {!useProfileCv && (
+                <div
+                  className={`dropzone${dragging ? " drag" : ""}${file ? " has-file" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => !file && inputRef.current.click()}
+                >
+                  <input ref={inputRef} type="file" accept=".pdf" style={{ display: "none" }}
+                    onChange={(e) => handleFile(e.target.files[0])} />
+                  {!file ? (
+                    <>
+                      <div className="dropzone-icon">📂</div>
+                      <div className="dropzone-title">Drop your résumé here</div>
+                      <div className="dropzone-sub">or click to browse — PDF only</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="dropzone-icon" style={{ background: "var(--teal-light)", borderColor: "var(--teal-rule)" }}>✅</div>
+                      <div className="dropzone-title" style={{ color: "var(--teal)" }}>{file.name}</div>
+                      <div className="file-pill">
+                        <span>PDF</span>
+                        <span style={{ color: "var(--teal-rule)" }}>·</span>
+                        <span>{(file.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <br />
+                      <button className="btn-remove" onClick={(e) => { e.stopPropagation(); handleReset(); }}>
+                        ✕ Remove file
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Progress */}
+              {loading && (
+                <div className="progress-wrap">
+                  <div className="progress-meta">
+                    <span>Analyzing document…</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="error-box">
+                  <span>⚠</span><span>{error}</span>
+                </div>
+              )}
+
+              {/* CTA */}
+              <button
+                className="btn-primary"
+                onClick={handleAnalyze}
+                disabled={loading || (!file && !useProfileCv)}
+                style={{ marginTop: error || loading ? 0 : 4 }}
+              >
+                {loading ? "Analyzing…" : <><span>Analyze My CV</span><ArrowRight /></>}
+              </button>
+            </div>
+          </div>
+
+          {/* ── Results ── */}
+          {result && (
+            <div className="anim anim-d1" style={{ marginTop: 20 }}>
+              <ResultCard result={result} />
+            </div>
+          )}
+
+          {/* ── Warning ── */}
+          {matchWarning && (
+            <div className="warning-box">
+              <span>⚠</span><span>{matchWarning}</span>
+            </div>
+          )}
+
+          {/* ── Job matches ── */}
+          {jobMatches && jobMatches.length > 0 && (
+            <div className="anim anim-d2" style={{ marginTop: 16 }}>
+              <JobMatches matches={jobMatches} />
+            </div>
           )}
         </div>
-        )} {/* end !useProfileCv */}
-
-        {/* Progress Bar */}
-        {loading && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: T.purpleLight }}>Analyzing your CV...</span>
-              <span style={{ fontSize: 12, color: T.purpleLight }}>{progress}%</span>
-            </div>
-            <div style={{ width: "100%", height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden" }}>
-              <div style={{ width: `${progress}%`, height: "100%", background: T.grad, borderRadius: 10, transition: "width 0.3s ease" }} />
-            </div>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div style={{ padding: "14px 18px", borderRadius: 12, marginBottom: 20, background: "rgba(232,120,133,0.1)", border: "1px solid rgba(232,120,133,0.3)", color: "#e87885", fontSize: 13 }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Analyze Button */}
-        <button onClick={handleAnalyze} disabled={loading || (!file && !useProfileCv)} style={{
-          width: "100%", padding: "16px", borderRadius: 12,
-          background: T.grad,
-          border: "none", color: "#fff", fontWeight: 700, fontSize: 16,
-          cursor: (loading || (!file && !useProfileCv)) ? "not-allowed" : "pointer",
-          letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(102,126,234,0.4)",
-          opacity: (loading || (!file && !useProfileCv)) ? 0.6 : 1, transition: "all 0.2s", marginBottom: 32,
-        }}>
-          {loading ? "⏳ Analyzing..." : "🚀 Analyze My CV"}
-        </button>
-
-        {result && <ResultCard result={result} />}
-
-        {matchWarning && (
-          <div style={{
-            marginTop: 20, padding: "14px 18px", borderRadius: 12,
-            background: "rgba(251,191,36,0.08)",
-            border: "1px solid rgba(251,191,36,0.25)",
-            color: "#fbbf24", fontSize: 13,
-          }}>
-            ⚠️ {matchWarning}
-          </div>
-        )}
-
-        {jobMatches && jobMatches.length > 0 && (
-          <div style={{ marginTop: 24 }}>
-            <JobMatches matches={jobMatches} />
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 }
 
+/* ─── Result card ────────────────────────────────────────────────────────── */
 function ResultCard({ result }) {
-  const jobTitles     = result.job_titles    || result.recommendedJobs || [];
-  const topSkills     = result.top_skills    || result.topSkills       || [];
-  const careerAdvice  = result.career_advice || result.careerAdvice    || null;
-  const candidateName = result.candidate_name || result.candidateName  || null;
-  const expLevel      = result.experience_level || result.experienceLevel || null;
+  const jobTitles    = result.job_titles    || result.recommendedJobs || [];
+  const topSkills    = result.top_skills    || result.topSkills       || [];
+  const careerAdvice = result.career_advice || result.careerAdvice    || null;
+  const candidateName= result.candidate_name|| result.candidateName   || null;
+  const expLevel     = result.experience_level || result.experienceLevel || null;
 
-  const bestJobObj  = jobTitles[0] || null;
-  const bestJob     = bestJobObj?.title || result.best_job || null;
-  const bestSalary  = bestJobObj?.salary_range_usd_per_year || null;
-  const bestExp     = bestJobObj?.explanation || null;
+  const bestJobObj = jobTitles[0] || null;
+  const bestJob    = bestJobObj?.title || result.best_job || null;
+  const bestSalary = bestJobObj?.salary_range_usd_per_year || null;
+  const bestExp    = bestJobObj?.explanation || null;
 
   const skills  = topSkills.length > 0 ? topSkills : (result.skills || result.matched_skills || []);
   const allJobs = jobTitles.length > 1 ? jobTitles : null;
   const isRaw   = !bestJob && !allJobs && !skills.length && !careerAdvice;
 
   return (
-    <div style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 18, padding: 28 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.text }}>🎯 Analysis Results</h3>
-        {(candidateName || expLevel) && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {candidateName && <span style={{ fontSize: 13, color: T.textMuted }}>{candidateName}</span>}
-            {expLevel && (
-              <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>
-                {expLevel}
-              </span>
-            )}
+    <div className="card">
+      <div className="card-header">
+        <span className="card-header-title">02 — Analysis Results</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {candidateName && (
+            <span style={{ fontSize: 12, color: "var(--ink-45)", fontFamily: "var(--mono)" }}>{candidateName}</span>
+          )}
+          {expLevel && <span className="badge-pill">{expLevel}</span>}
+        </div>
+      </div>
+      <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+
+        {/* Best job hero */}
+        {bestJob && (
+          <div>
+            <div className="section-label">Top Match</div>
+            <div className="result-hero">
+              <div className="result-hero-eye">Best Matching Role</div>
+              <div className="result-hero-role">{getEmoji(bestJob)}&ensp;{bestJob}</div>
+              {bestSalary && <div className="result-hero-salary">💰 {bestSalary}</div>}
+              {bestExp && <p className="result-hero-exp">{bestExp}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* All jobs table */}
+        {allJobs && (
+          <div>
+            <div className="section-label">All Matched Roles</div>
+            <div className="jobs-table">
+              {allJobs.map((item, i) => {
+                const jobName = item.title || `Role ${i + 1}`;
+                const salary  = item.salary_range_usd_per_year || null;
+                const barW    = Math.max(96 - i * 13, 30);
+                return (
+                  <div className="jobs-table-row" key={i}>
+                    <span className="jobs-table-rank">{i + 1}</span>
+                    <span className="jobs-table-emoji">{getEmoji(jobName)}</span>
+                    <span className="jobs-table-name">{jobName}</span>
+                    {salary && <span className="jobs-table-salary">{salary}</span>}
+                    <div className="jobs-table-bar-wrap">
+                      <div className="jobs-table-bar-track">
+                        <div className="jobs-table-bar-fill" style={{ width: `${barW}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <div>
+            <div className="section-label">Detected Skills</div>
+            <div className="skills-wrap">
+              {skills.map((s, i) => (
+                <span className="skill-tag" key={i}>
+                  {typeof s === "string" ? s : s.name || s.skill || String(s)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Career advice */}
+        {careerAdvice && (
+          <div>
+            <div className="section-label">Career Advice</div>
+            <div className="advice-box">{careerAdvice}</div>
+          </div>
+        )}
+
+        {/* Raw fallback */}
+        {isRaw && (
+          <div>
+            <div className="section-label" style={{ color: "var(--red)" }}>Unexpected Format</div>
+            <p style={{ fontSize: 13, color: "var(--ink-70)", marginBottom: 10, lineHeight: 1.6, fontWeight: 300 }}>
+              The AI returned an unrecognized format. Update your n8n agent to return JSON only.
+            </p>
+            <div className="raw-box">
+              {typeof result.raw === "string" ? result.raw : JSON.stringify(result, null, 2)}
+            </div>
           </div>
         )}
       </div>
-
-      {/* Best Job Hero Card */}
-      {bestJob && (
-        <div style={{
-          background: "linear-gradient(135deg, rgba(108,99,255,0.18), rgba(62,207,178,0.14))",
-          border: `1px solid ${T.purpleBorder}`,
-          borderRadius: 14, padding: "20px 24px", marginBottom: 20,
-        }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-            <div style={{ fontSize: 44, flexShrink: 0 }}>{getEmoji(bestJob)}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: T.purpleLight, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-                Best Match Role
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 4 }}>{bestJob}</div>
-              {bestSalary && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: T.tealDim, border: `1px solid ${T.tealBorder}`, marginBottom: bestExp ? 10 : 0 }}>
-                  <span style={{ fontSize: 13, color: T.teal }}>💰 {bestSalary}</span>
-                </div>
-              )}
-              {bestExp && (
-                <p style={{ margin: bestSalary ? "8px 0 0" : "4px 0 0", fontSize: 13, color: T.textMuted, lineHeight: 1.6 }}>{bestExp}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* All Jobs */}
-      {allJobs && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
-            All Matched Roles
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {allJobs.map((item, i) => {
-              const jobName   = item.title || `Job ${i + 1}`;
-              const salary    = item.salary_range_usd_per_year || null;
-              const skillsDev = item.skills_to_develop || [];
-              const exp       = item.explanation || null;
-              const barWidth  = Math.max(95 - i * 12, 35);
-
-              return (
-                <div key={i} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 20 }}>{getEmoji(jobName)}</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{jobName}</span>
-                    </div>
-                    {salary && (
-                      <span style={{ fontSize: 12, color: T.teal, fontWeight: 600, whiteSpace: "nowrap" }}>
-                        💰 {salary}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 10, overflow: "hidden", marginBottom: exp || skillsDev.length ? 10 : 0 }}>
-                    <div style={{ width: `${barWidth}%`, height: "100%", background: T.grad, borderRadius: 10, transition: "width 0.6s ease" }} />
-                  </div>
-                  {exp && <p style={{ margin: "0 0 8px", fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>{exp}</p>}
-                  {skillsDev.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {skillsDev.map((s, j) => (
-                        <span key={j} style={{ padding: "2px 9px", borderRadius: 20, fontSize: 10, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>+ {s}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Top Skills */}
-      {skills.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
-            🛠️ Skills Detected
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {skills.map((skill, i) => (
-              <span key={i} style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, background: T.purpleDim, border: `1px solid ${T.purpleBorder}`, color: T.purpleLight }}>{skill}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Career Advice */}
-      {careerAdvice && (
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ fontSize: 12, color: T.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
-            📝 Career Advice
-          </div>
-          <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.8 }}>{careerAdvice}</div>
-        </div>
-      )}
-
-      {/* Fallback raw */}
-      {isRaw && (
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" }}>
-          <div style={{ fontSize: 12, color: "#e87885", marginBottom: 8, fontWeight: 600 }}>
-            ⚠️ Unexpected response format - update your n8n AI Agent prompt to return JSON only.
-          </div>
-          <pre style={{ fontSize: 11, color: T.textDim, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 300, overflow: "auto" }}>
-            {typeof result.raw === "string" ? result.raw : JSON.stringify(result, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }
 
+/* ─── Job matches ────────────────────────────────────────────────────────── */
 function JobMatches({ matches }) {
   return (
-    <div style={{
-      background: T.surfaceAlt,
-      border: `1px solid ${T.border}`,
-      borderRadius: 18,
-      padding: 28,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.text }}>
-          💼 Matched Jobs From TanitJobs
-        </h3>
-        <span style={{
-          padding: "3px 10px", borderRadius: 20, fontSize: 11,
-          background: T.tealDim, border: `1px solid ${T.tealBorder}`, color: T.teal,
-        }}>
-          {matches.length} results
-        </span>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-header-title">03 — Live Job Matches</span>
+        <span className="badge-pill">TanitJobs · {matches.length} results</span>
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {matches.map((job, i) => {
           const scorePct = Math.round((job.match_score ?? 0) * 100);
           const matched  = job.skills_matched || [];
           const missing  = job.skills_missing || [];
           return (
-            <div key={i} style={{
-              background: T.surface,
-              border: `1px solid ${T.border}`,
-              borderRadius: 12,
-              padding: "16px 18px",
-            }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{getEmoji(job.job_title || "")}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>
-                      {job.job_title}
-                    </div>
-                    <div style={{ fontSize: 12, color: T.textMuted }}>
+            <div className="match-card" key={i}>
+              <div className="match-card-header">
+                <div className="match-card-main">
+                  <span className="match-card-emoji">{getEmoji(job.job_title || "")}</span>
+                  <div>
+                    <div className="match-card-title">{job.job_title}</div>
+                    <div className="match-card-meta">
                       {job.company}{job.location ? ` · ${job.location}` : ""}
                     </div>
                   </div>
                 </div>
-                <span style={{
-                  padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                  background: T.purpleDim,
-                  border: `1px solid ${T.purpleBorder}`,
-                  color: T.purpleLight,
-                  whiteSpace: "nowrap",
-                }}>
-                  {scorePct}% match
-                </span>
+                <span className="match-badge">{scorePct}% match</span>
               </div>
 
-              <div style={{
-                width: "100%", height: 5, background: "rgba(255,255,255,0.06)",
-                borderRadius: 10, overflow: "hidden", marginBottom: 12,
-              }}>
-                <div style={{
-                  width: `${scorePct}%`, height: "100%",
-                  background: T.grad,
-                  borderRadius: 10, transition: "width 0.6s ease",
-                }} />
+              <div className="match-bar-track">
+                <div className="match-bar-fill" style={{ width: `${scorePct}%` }} />
               </div>
 
               {matched.length > 0 && (
-                <div style={{ marginBottom: missing.length ? 8 : 0 }}>
-                  <div style={{ fontSize: 10, color: T.teal, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
-                    ✓ Your matching skills
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {matched.map((s, j) => (
-                      <span key={j} style={{
-                        padding: "2px 9px", borderRadius: 20, fontSize: 10,
-                        background: T.tealDim,
-                        border: `1px solid ${T.tealBorder}`,
-                        color: T.teal,
-                      }}>{s}</span>
-                    ))}
-                  </div>
-                </div>
+                <>
+                  <div className="tags-label">✓ Your matching skills</div>
+                  <div>{matched.map((s, j) => <span className="tag-matched" key={j}>{s}</span>)}</div>
+                </>
               )}
 
               {missing.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 10, color: "#fbbf24", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600 }}>
-                    + Skills to learn
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {missing.slice(0, 8).map((s, j) => (
-                      <span key={j} style={{
-                        padding: "2px 9px", borderRadius: 20, fontSize: 10,
-                        background: "rgba(251,191,36,0.1)",
-                        border: "1px solid rgba(251,191,36,0.25)",
-                        color: "#fbbf24",
-                      }}>{s}</span>
-                    ))}
+                <>
+                  <div className="tags-label">+ Skills to develop</div>
+                  <div>
+                    {missing.slice(0, 8).map((s, j) => <span className="tag-missing" key={j}>{s}</span>)}
                     {missing.length > 8 && (
-                      <span style={{ fontSize: 10, color: T.textMuted, alignSelf: "center" }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-25)", marginLeft: 6, fontFamily: "var(--mono)" }}>
                         +{missing.length - 8} more
                       </span>
                     )}
                   </div>
-                </div>
+                </>
               )}
 
               {job.link && (
-                <a
-                  href={job.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-block", marginTop: 12,
-                    padding: "8px 16px", borderRadius: 10,
-                    background: T.grad,
-                    color: "#fff", fontSize: 12, fontWeight: 600,
-                    textDecoration: "none",
-                    boxShadow: "0 4px 14px rgba(108,99,255,0.3)",
-                  }}
-                >
-                  Apply on TanitJobs →
+                <a href={job.link} target="_blank" rel="noopener noreferrer" className="apply-btn">
+                  Apply on TanitJobs <ArrowRight />
                 </a>
               )}
             </div>
