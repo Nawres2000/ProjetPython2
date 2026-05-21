@@ -13,6 +13,9 @@ import shutil
 import uuid
 from typing import Optional
 from datetime import datetime, timedelta
+import sqlite3
+import json
+import threading
 from pymongo import MongoClient
 import bcrypt as _bcrypt
 from jose import JWTError, jwt
@@ -33,6 +36,68 @@ JWT_SECRET    = os.getenv("JWT_SECRET", "change-me-in-production-use-a-long-rand
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_H  = 24
 
+# ── SQLite fallback collection (used when MongoDB is unavailable) ─────────────
+class _SqliteCollection:
+    """Minimal MongoDB-collection-compatible wrapper backed by SQLite."""
+
+    def __init__(self, db_path: str):
+        self._path = db_path
+        self._lock = threading.Lock()
+        self._init()
+
+    def _connect(self):
+        conn = sqlite3.connect(self._path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init(self):
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS users "
+                "(email TEXT PRIMARY KEY, data TEXT NOT NULL)"
+            )
+            conn.commit()
+
+    def find_one(self, query: dict):
+        email = query.get("email")
+        if not email:
+            return None
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT data FROM users WHERE email=?", (email,)
+            ).fetchone()
+        return json.loads(row["data"]) if row else None
+
+    def insert_one(self, doc: dict):
+        doc = {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in doc.items()}
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO users (email, data) VALUES (?,?)",
+                (doc["email"], json.dumps(doc)),
+            )
+            conn.commit()
+
+    def update_one(self, query: dict, update: dict):
+        email = query.get("email")
+        if not email:
+            return
+        existing = self.find_one({"email": email})
+        if existing is None:
+            return
+        if "$set" in update:
+            for k, v in update["$set"].items():
+                existing[k] = v.isoformat() if isinstance(v, datetime) else v
+        if "$unset" in update:
+            for k in update["$unset"]:
+                existing.pop(k, None)
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "UPDATE users SET data=? WHERE email=?",
+                (json.dumps(existing), email),
+            )
+            conn.commit()
+
+
 # Initialize MongoDB with timeout and connection pooling
 try:
     _mongo = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=5000)
@@ -41,10 +106,12 @@ try:
     users_col = _db["users"]
     print("✓ MongoDB connected successfully")
 except Exception as e:
-    print(f"✗ MongoDB connection failed: {e}. Running in offline mode.")
+    print(f"✗ MongoDB connection failed: {e}. Falling back to local SQLite database.")
     _mongo = None
     _db = None
-    users_col = None
+    _sqlite_db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    users_col = _SqliteCollection(_sqlite_db_path)
+    print(f"✓ SQLite fallback active → {_sqlite_db_path}")
 
 bearer    = HTTPBearer()
 
@@ -79,8 +146,6 @@ def _make_token(email: str, username: str) -> str:
 
 @app.post("/auth/register", tags=["auth"])
 def register(body: UserRegister):
-    if users_col is None:
-        raise HTTPException(status_code=503, detail="Database service unavailable")
     if users_col.find_one({"email": body.email}):
         raise HTTPException(status_code=400, detail="Email already registered")
     users_col.insert_one({
@@ -95,8 +160,6 @@ def register(body: UserRegister):
 
 @app.post("/auth/login", tags=["auth"])
 def login(body: UserLogin):
-    if users_col is None:
-        raise HTTPException(status_code=503, detail="Database service unavailable")
     user = users_col.find_one({"email": body.email})
     if not user or not _verify(body.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -123,8 +186,6 @@ MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 def _get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
-    if users_col is None:
-        raise HTTPException(status_code=503, detail="Database service unavailable")
     try:
         payload = jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user = users_col.find_one({"email": payload["sub"]})
@@ -427,6 +488,80 @@ async def predict_batch(file: UploadFile = File(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# ── Profile-based prediction (multi-probe) ─────────────────────────────────────
+# Maps each class to a representative title used in training data.
+# We run one prediction per role, collect p(role | title=role, skills),
+# then normalise so the 7 scores sum to 100 %.  This removes the
+# single-title bias and lets skill features drive the ranking.
+_ROLE_TITLES = {
+    "Business Analyst":  "business analyst",
+    "Cloud Engineer":    "cloud engineer",
+    "Data Analyst":      "data analyst",
+    "Data Engineer":     "data engineer",
+    "Data Scientist":    "data scientist",
+    "ML Engineer":       "machine learning engineer",
+    "Software Engineer": "software engineer",
+}
+
+class ProfileData(BaseModel):
+    skills:          list           = []
+    job_type_skills: Optional[str]  = "{}"
+    job_via:         Optional[str]  = "LinkedIn"
+    job_country:     Optional[str]  = "Unknown"
+    job_location:    Optional[str]  = "Unknown"
+    schedule:        Optional[str]  = "Full-time"
+    work_from_home:  Optional[int]  = 0
+    no_degree:       Optional[int]  = 0
+    health_insurance:Optional[int]  = 0
+
+@app.post("/predict_profile")
+def predict_profile(data: ProfileData):
+    """
+    Off-diagonal multi-probe: for each of 7 role-title probes, collect
+    p(class_j) for every class j whose title was NOT used as the probe title.
+    These 6 off-diagonal values per class are driven by skill features,
+    not by the title — so averaging them removes the title-dominance bias.
+    """
+    if not model:
+        raise HTTPException(status_code=503, detail="ML model not loaded.")
+    try:
+        classes = list(le.classes_)
+        off_diag_accum = {cls: 0.0 for cls in classes}
+        n_off = len(_ROLE_TITLES) - 1  # 6 off-diagonal contributions per class
+
+        for probe_class, title in _ROLE_TITLES.items():
+            job = JobData(
+                job_title            = title,
+                job_via              = data.job_via,
+                job_schedule_type    = data.schedule,
+                job_location         = data.job_location,
+                search_location      = data.job_location,
+                company_name         = "Unknown",
+                job_country          = data.job_country,
+                job_work_from_home   = data.work_from_home,
+                job_no_degree_mention= data.no_degree,
+                job_health_insurance = data.health_insurance,
+                job_skills           = str(data.skills),
+                job_type_skills      = data.job_type_skills,
+            )
+            probas = model.predict_proba(build_features(job))[0]
+            for i, cls in enumerate(classes):
+                if cls != probe_class:   # off-diagonal only → skill-driven signal
+                    off_diag_accum[cls] += float(probas[i])
+
+        # Average then normalise
+        scores = {k: v / n_off for k, v in off_diag_accum.items()}
+        total = sum(scores.values())
+        if total > 0:
+            scores = {k: round(v / total, 4) for k, v in scores.items()}
+
+        predicted_label = max(scores, key=scores.get)
+        return {"predicted_label": predicted_label, "probabilities": scores}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
