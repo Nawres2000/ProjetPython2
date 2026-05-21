@@ -9,9 +9,9 @@ const CSS = `
     --border:       #e2ddd6;
     --border2:      #ccc7bf;
     --ink:          #1a1814;
-    --ink-70:       rgba(26,24,20,0.7);
-    --ink-45:       rgba(26,24,20,0.45);
-    --ink-25:       rgba(26,24,20,0.25);
+    --ink-70:       rgba(26,24,20,0.78);
+    --ink-45:       rgba(26,24,20,0.58);
+    --ink-25:       rgba(26,24,20,0.38);
     --accent:       #c8490a;
     --accent-light: #fff3ee;
     --accent-rule:  #fbd0b8;
@@ -125,7 +125,7 @@ const CSS = `
   }
 `;
 
-export default function Header({ backendOk, user, onHome, onLogout, onProfile, onJobs }) {
+export default function Header({ backendOk, user, onHome, onLogout, onProfile, onJobs, onLearn }) {
   const statusClass =
     backendOk === null ? "sp-status sp-status--checking" :
     backendOk          ? "sp-status sp-status--ok"       :
@@ -167,6 +167,7 @@ export default function Header({ backendOk, user, onHome, onLogout, onProfile, o
               <span className="sp-username">{user.username}</span>
 
               <button className="sp-nav-btn" onClick={onJobs}>Browse Jobs</button>
+              <button className="sp-nav-btn" onClick={onLearn}>Learning Path</button>
               <button className="sp-nav-btn" onClick={onProfile}>Profile</button>
               <button className="sp-nav-btn" onClick={onHome}>Home</button>
 

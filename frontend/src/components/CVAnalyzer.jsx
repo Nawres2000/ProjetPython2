@@ -21,6 +21,74 @@ const JOB_EMOJIS = {
   "Automation":        "⚡",
 };
 
+/* ── Skill-to-track mapping ── */
+const SKILL_TRACK_MAP = {
+  python: ["python", "pandas", "numpy", "matplotlib", "flask", "django", "fastapi", "jupyter"],
+  ml:     ["machine learning", "scikit-learn", "sklearn", "tensorflow", "pytorch", "keras", "xgboost", "lightgbm", "deep learning", "neural network", "classification", "regression", "clustering"],
+  ai:     ["artificial intelligence", "nlp", "reinforcement learning", "computer vision", "llm", "generative", "transformers", "langchain", "openai"],
+  stats:  ["statistics", "probability", "hypothesis", "distributions", "r language", "rstudio", "spss", "stata", "bayesian"],
+  sql:    ["sql", "postgresql", "mysql", "sqlite", "mongodb", "database", "nosql", "redis", "bigquery"],
+  java:   ["java", "spring", "kotlin", "jvm", "maven", "gradle"],
+};
+
+const COURSE_CATALOG = [
+  { id: "cs50-python",  track: "python", color: "#3b82f6", colorLight: "rgba(59,130,246,0.08)",  colorRule: "rgba(59,130,246,0.22)",  title: "CS50's Intro to Programming with Python",  provider: "Harvard",                   level: "Beginner",                url: "https://cs50.harvard.edu/python/",                                       why: "Build a solid Python foundation — variables, OOP, file handling." },
+  { id: "helsinki-py",  track: "python", color: "#3b82f6", colorLight: "rgba(59,130,246,0.08)",  colorRule: "rgba(59,130,246,0.22)",  title: "Python Programming MOOC",                  provider: "U. of Helsinki",            level: "Beginner → Intermediate", url: "https://programming-24.mooc.fi/",                                        why: "Exercise-heavy and job-ready. Frequently recommended on Reddit." },
+  { id: "andrew-ng",   track: "ml",     color: "#0d6e64", colorLight: "rgba(13,110,100,0.08)",  colorRule: "rgba(13,110,100,0.22)",  title: "Machine Learning Specialization",          provider: "Andrew Ng / DeepLearning.AI", level: "Intermediate",           url: "https://www.coursera.org/specializations/machine-learning-introduction", why: "The gold-standard ML course — regression, neural nets, clustering." },
+  { id: "kaggle",      track: "ml",     color: "#0d6e64", colorLight: "rgba(13,110,100,0.08)",  colorRule: "rgba(13,110,100,0.22)",  title: "Kaggle Learn",                             provider: "Kaggle",                    level: "Beginner → Intermediate", url: "https://www.kaggle.com/learn",                                          why: "Hands-on practice with real datasets and competitions." },
+  { id: "cs50-ai",     track: "ai",     color: "#8b5cf6", colorLight: "rgba(139,92,246,0.08)",  colorRule: "rgba(139,92,246,0.22)",  title: "CS50's Intro to AI with Python",           provider: "Harvard",                   level: "Intermediate",            url: "https://cs50.harvard.edu/ai/",                                          why: "Search, ML, neural nets, NLP, RL — all project-based." },
+  { id: "google-ml",   track: "ai",     color: "#8b5cf6", colorLight: "rgba(139,92,246,0.08)",  colorRule: "rgba(139,92,246,0.22)",  title: "Machine Learning Crash Course",            provider: "Google",                    level: "Beginner → Intermediate", url: "https://developers.google.com/machine-learning/crash-course",           why: "Fast practical ML intro with TensorFlow exercises." },
+  { id: "khan-stats",  track: "stats",  color: "#c8490a", colorLight: "rgba(200,73,10,0.08)",   colorRule: "rgba(200,73,10,0.22)",   title: "Statistics and Probability",               provider: "Khan Academy",              level: "Beginner",                url: "https://www.khanacademy.org/math/statistics-probability",              why: "Best free stats course — probability to hypothesis testing." },
+  { id: "stat110",     track: "stats",  color: "#c8490a", colorLight: "rgba(200,73,10,0.08)",   colorRule: "rgba(200,73,10,0.22)",   title: "Statistics 110: Probability",              provider: "Harvard",                   level: "Advanced",                url: "https://projects.iq.harvard.edu/stat110",                              why: "Rigorous probability course for deeper mathematical grounding." },
+  { id: "cs50-sql",    track: "sql",    color: "#64748b", colorLight: "rgba(100,116,139,0.08)", colorRule: "rgba(100,116,139,0.22)", title: "CS50's Intro to Databases with SQL",       provider: "Harvard",                   level: "Beginner → Intermediate", url: "https://cs50.harvard.edu/sql/",                                         why: "Full SQL curriculum: joins, indexing, normalization." },
+  { id: "sqlbolt",     track: "sql",    color: "#64748b", colorLight: "rgba(100,116,139,0.08)", colorRule: "rgba(100,116,139,0.22)", title: "SQLBolt",                                  provider: "SQLBolt",                   level: "Beginner",                url: "https://sqlbolt.com/",                                                  why: "Fastest way to learn SQL interactively in the browser." },
+  { id: "helsinki-java",track:"java",   color: "#f59e0b", colorLight: "rgba(245,158,11,0.08)",  colorRule: "rgba(245,158,11,0.22)",  title: "Java Programming MOOC",                    provider: "U. of Helsinki",            level: "Beginner → Intermediate", url: "https://java-programming.mooc.fi/",                                     why: "Strong OOP fundamentals — one of the best free Java courses." },
+];
+
+function computeCourseRecs(detectedSkills, matches) {
+  const lower   = (s) => s.toLowerCase();
+  const detected = detectedSkills.map(lower);
+  const missing  = (matches || []).flatMap(j => (j.skills_missing || []).map(lower));
+
+  const trackScores = {};
+  const trackIsGap  = {};
+
+  for (const skill of detected) {
+    for (const [track, keywords] of Object.entries(SKILL_TRACK_MAP)) {
+      if (keywords.some(kw => skill.includes(kw) || kw.includes(skill))) {
+        trackScores[track] = (trackScores[track] || 0) + 2;
+      }
+    }
+  }
+  for (const skill of missing) {
+    for (const [track, keywords] of Object.entries(SKILL_TRACK_MAP)) {
+      if (keywords.some(kw => skill.includes(kw) || kw.includes(skill))) {
+        trackScores[track] = (trackScores[track] || 0) + 3;
+        trackIsGap[track]  = true;
+      }
+    }
+  }
+
+  const topTracks = Object.entries(trackScores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([track]) => track);
+
+  const recs = [];
+  for (const track of topTracks) {
+    const courses = COURSE_CATALOG.filter(c => c.track === track).slice(0, 2);
+    for (const c of courses) recs.push({ ...c, isGap: !!trackIsGap[track] });
+  }
+
+  // Always include Kaggle if any ML/AI signal
+  if (!recs.some(r => r.id === "kaggle") && (trackScores.ml || trackScores.ai) && recs.length < 6) {
+    const k = COURSE_CATALOG.find(c => c.id === "kaggle");
+    if (k) recs.push({ ...k, isGap: false });
+  }
+
+  return recs.slice(0, 6);
+}
+
 function getEmoji(title) {
   for (const [key, emoji] of Object.entries(JOB_EMOJIS)) {
     if (title?.toLowerCase().includes(key.toLowerCase())) return emoji;
@@ -42,9 +110,9 @@ const CSS = `
     --border:  #e2ddd6;
     --border2: #ccc7bf;
     --ink:     #1a1814;
-    --ink-70:  rgba(26,24,20,0.7);
-    --ink-45:  rgba(26,24,20,0.45);
-    --ink-25:  rgba(26,24,20,0.25);
+    --ink-70:  rgba(26,24,20,0.78);
+    --ink-45:  rgba(26,24,20,0.58);
+    --ink-25:  rgba(26,24,20,0.38);
     --ink-10:  rgba(26,24,20,0.08);
     --ink-5:   rgba(26,24,20,0.04);
 
@@ -490,6 +558,58 @@ const CSS = `
   .anim-d1 { animation-delay: 0.06s; }
   .anim-d2 { animation-delay: 0.12s; }
   .anim-d3 { animation-delay: 0.18s; }
+
+  /* ── Course recommendation cards ── */
+  .crec-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  @media (max-width: 560px) { .crec-grid { grid-template-columns: 1fr; } }
+
+  .crec-card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--r); overflow: hidden;
+    transition: all 0.2s; display: flex; flex-direction: column;
+  }
+  .crec-card:hover { box-shadow: var(--sh); border-color: var(--border2); }
+
+  .crec-accent { height: 3px; flex-shrink: 0; }
+
+  .crec-body { padding: 16px 18px; display: flex; flex-direction: column; flex: 1; }
+
+  .crec-meta {
+    display: flex; align-items: center; gap: 7px; margin-bottom: 9px; flex-wrap: wrap;
+  }
+  .crec-provider {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-25);
+  }
+  .crec-level {
+    padding: 2px 8px; border-radius: 100px; font-size: 10px;
+    font-family: var(--mono); background: var(--warm);
+    border: 1px solid var(--border); color: var(--ink-45);
+  }
+  .crec-badge {
+    padding: 2px 8px; border-radius: 100px; font-size: 10px;
+    font-family: var(--mono); border: 1px solid; margin-left: auto;
+  }
+  .crec-badge--gap      { background: var(--amber-light); border-color: var(--amber-rule); color: var(--amber); }
+  .crec-badge--strength { background: var(--teal-light);  border-color: var(--teal-rule);  color: var(--teal);  }
+
+  .crec-title {
+    font-size: 13.5px; font-weight: 600; color: var(--ink);
+    line-height: 1.35; margin-bottom: 7px;
+  }
+  .crec-why {
+    font-size: 12px; color: var(--ink-45); line-height: 1.55;
+    margin-bottom: 14px; flex: 1;
+  }
+  .crec-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: var(--r-sm);
+    font-size: 12px; font-weight: 500; text-decoration: none;
+    border: 1px solid; transition: all 0.15s; align-self: flex-start;
+  }
+  .crec-link:hover { opacity: 0.82; transform: translateY(-1px); }
 `;
 
 const ArrowRight = () => (
@@ -509,6 +629,7 @@ export default function CVAnalyzer({ user }) {
   const [result,       setResult]       = useState(null);
   const [jobMatches,   setJobMatches]   = useState(null);
   const [matchWarning, setMatchWarning] = useState(null);
+  const [courseRecs,   setCourseRecs]   = useState(null);
   const [error,        setError]        = useState(null);
   const [progress,     setProgress]     = useState(0);
   const inputRef = useRef(null);
@@ -553,7 +674,7 @@ export default function CVAnalyzer({ user }) {
   const fetchJobMatches = async (skills) => {
     if (!skills || skills.length === 0) {
       setMatchWarning("No skills were extracted from the CV, so no jobs could be matched.");
-      return;
+      return null;
     }
     try {
       const res = await fetch(RECOMMENDER_URL, {
@@ -563,9 +684,12 @@ export default function CVAnalyzer({ user }) {
       });
       if (!res.ok) throw new Error(`Recommender error: ${res.status}`);
       const data = await res.json();
-      setJobMatches(data.recommendations || []);
+      const recs = data.recommendations || [];
+      setJobMatches(recs);
+      return recs;
     } catch (err) {
       setMatchWarning(`Could not reach the job recommender (${err.message}). Make sure controller.py is running on port 8000.`);
+      return null;
     }
   };
 
@@ -603,7 +727,9 @@ export default function CVAnalyzer({ user }) {
         else { parsed = { raw: cleaned }; }
       }
       setResult(parsed);
-      await fetchJobMatches(extractSkillStrings(parsed));
+      const detectedSkills = extractSkillStrings(parsed);
+      const matches = await fetchJobMatches(detectedSkills);
+      setCourseRecs(computeCourseRecs(detectedSkills, matches || []));
     } catch (err) {
       clearInterval(interval);
       setError(`Failed to analyze CV: ${err.message}`);
@@ -615,7 +741,7 @@ export default function CVAnalyzer({ user }) {
 
   const handleReset = () => {
     setFile(null); setResult(null); setError(null);
-    setJobMatches(null); setMatchWarning(null); setProgress(0);
+    setJobMatches(null); setMatchWarning(null); setCourseRecs(null); setProgress(0);
   };
 
   return (
@@ -755,6 +881,13 @@ export default function CVAnalyzer({ user }) {
               <JobMatches matches={jobMatches} />
             </div>
           )}
+
+          {/* ── Course recommendations ── */}
+          {courseRecs && courseRecs.length > 0 && (
+            <div className="anim anim-d3" style={{ marginTop: 16 }}>
+              <CourseRecs recs={courseRecs} />
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -865,6 +998,50 @@ function ResultCard({ result }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Course recommendations ────────────────────────────────────────────── */
+function CourseRecs({ recs }) {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <span className="card-header-title">04 — Recommended Courses</span>
+        <span className="badge-pill">Based on your CV · {recs.length} courses</span>
+      </div>
+      <div className="card-body">
+        <p style={{ fontSize: 13, color: "var(--ink-45)", marginBottom: 16, lineHeight: 1.6, fontWeight: 300 }}>
+          Curated free courses matched to your detected skills and the gaps identified in job listings.
+        </p>
+        <div className="crec-grid">
+          {recs.map((c) => (
+            <div className="crec-card" key={c.id}>
+              <div className="crec-accent" style={{ background: `linear-gradient(90deg, ${c.color}, ${c.colorRule})` }} />
+              <div className="crec-body">
+                <div className="crec-meta">
+                  <span className="crec-provider">{c.provider}</span>
+                  <span className="crec-level">{c.level}</span>
+                  <span className={`crec-badge crec-badge--${c.isGap ? "gap" : "strength"}`}>
+                    {c.isGap ? "Fill gap" : "Strengthen"}
+                  </span>
+                </div>
+                <div className="crec-title">{c.title}</div>
+                <div className="crec-why">{c.why}</div>
+                <a
+                  className="crec-link"
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ background: c.colorLight, borderColor: c.colorRule, color: c.color }}
+                >
+                  View Course →
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -7,8 +7,9 @@ import CVAnalyzer   from "./components/CVAnalyzer";
 import SignIn       from "./components/SignIn";
 import SignUp       from "./components/SignUp";
 import HomePage     from "./components/HomePage";
-import ProfilePage  from "./components/ProfilePage";
-import JobsPage     from "./components/JobsPage";
+import ProfilePage   from "./components/ProfilePage";
+import JobsPage      from "./components/JobsPage";
+import LearningPath  from "./components/LearningPath";
 import { usePredictor }  from "./hooks/usePredictor";
 import { apiGetProfile } from "./services/api";
 
@@ -27,7 +28,7 @@ const GlobalStyles = () => (
         font-family: 'DM Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      ::placeholder { color: rgba(26,24,20,0.25) !important; }
+      ::placeholder { color: rgba(26,24,20,0.38) !important; }
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #e2ddd6; border-radius: 4px; }
@@ -153,7 +154,7 @@ const SHELL_CSS = `
   .panel-header-title {
     font-family: 'DM Mono', monospace; font-size: 11px;
     letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(26,24,20,0.45);
+    color: rgba(26,24,20,0.58);
   }
   .panel-header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
@@ -180,7 +181,7 @@ const SHELL_CSS = `
   }
 `;
 
-function AppShell({ children, backendOk, user, onHome, onLogout, onProfile, onJobs, activeTab, setActiveTab }) {
+function AppShell({ children, backendOk, user, onHome, onLogout, onProfile, onJobs, onLearn, activeTab, setActiveTab }) {
   return (
     <div className="shell">
       <style>{SHELL_CSS}</style>
@@ -193,6 +194,7 @@ function AppShell({ children, backendOk, user, onHome, onLogout, onProfile, onJo
         onLogout={onLogout}
         onProfile={onProfile}
         onJobs={onJobs}
+        onLearn={onLearn}
       />
 
       {/* Page hero */}
@@ -285,6 +287,40 @@ export default function App() {
   if (page === "signup")  return <><GlobalStyles /><SignUp  onSuccess={handleAuthSuccess} onSwitchToSignIn={() => setPage("signin")} /></>;
   if (page === "profile") return <><GlobalStyles /><ProfilePage user={user} onBack={() => setPage("app")} /></>;
   if (page === "jobs")    return <><GlobalStyles /><JobsPage    onBack={() => setPage("app")} /></>;
+  if (page === "learn")   return (
+    <>
+      <GlobalStyles />
+      <div className="shell">
+        <style>{SHELL_CSS}</style>
+        <Header
+          backendOk={backendOk}
+          user={user}
+          onHome={() => setPage("home")}
+          onLogout={handleLogout}
+          onProfile={() => setPage("profile")}
+          onJobs={() => setPage("jobs")}
+          onLearn={() => setPage("learn")}
+        />
+        <div className="shell-hero">
+          <div className="shell-hero-inner">
+            <div className="shell-kicker">
+              <span className="shell-kicker-line" />
+              <span className="shell-kicker-text">Free Courses</span>
+            </div>
+            <h1 className="shell-title">
+              Your <strong>Learning Path</strong>
+            </h1>
+            <p className="shell-subtitle">
+              Best free courses in Python, Java, AI, ML, Statistics and SQL — curated from Harvard, Helsinki, Google and more.
+            </p>
+          </div>
+        </div>
+        <div className="shell-content">
+          <LearningPath />
+        </div>
+      </div>
+    </>
+  );
 
   if (!user) { setPage("home"); return null; }
 
@@ -299,6 +335,7 @@ export default function App() {
         onLogout={handleLogout}
         onProfile={() => setPage("profile")}
         onJobs={() => setPage("jobs")}
+        onLearn={() => setPage("learn")}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       >

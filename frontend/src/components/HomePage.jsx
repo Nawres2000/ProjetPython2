@@ -43,9 +43,9 @@ const CSS = `
     --border:  #e2ddd6;
     --border2: #ccc7bf;
     --ink:     #1a1814;
-    --ink-70:  rgba(26,24,20,0.7);
-    --ink-45:  rgba(26,24,20,0.45);
-    --ink-25:  rgba(26,24,20,0.25);
+    --ink-70:  rgba(26,24,20,0.78);
+    --ink-45:  rgba(26,24,20,0.58);
+    --ink-25:  rgba(26,24,20,0.38);
     --ink-10:  rgba(26,24,20,0.08);
 
     --accent:       #c8490a;

@@ -6,6 +6,7 @@ import ResultsPanel from "./components/ResultsPanel";
 import SignIn       from "./components/SignIn";
 import SignUp       from "./components/SignUp";
 import HomePage     from "./components/HomePage";
+import LearningPath from "./components/LearningPath";
 import { usePredictor } from "./hooks/usePredictor";
 
 /* ─── Global styles ─────────────────────────────────────────────────────── */
@@ -23,7 +24,7 @@ const GlobalStyles = () => (
         font-family: 'DM Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      ::placeholder { color: rgba(26,24,20,0.25) !important; }
+      ::placeholder { color: rgba(26,24,20,0.38) !important; }
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #e2ddd6; border-radius: 4px; }
@@ -107,7 +108,7 @@ const SHELL_CSS = `
   .panel-header-title {
     font-family: 'DM Mono', monospace; font-size: 11px;
     letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(26,24,20,0.45);
+    color: rgba(26,24,20,0.58);
   }
   .panel-header-right { margin-left: auto; }
 
@@ -193,6 +194,44 @@ export default function App() {
     );
   }
 
+  /* ── Learning path page ── */
+  if (page === "learn") {
+    return (
+      <>
+        <GlobalStyles />
+        <style>{SHELL_CSS}</style>
+        <div className="shell">
+          <Header
+            backendOk={null}
+            user={user}
+            onHome={() => setPage("home")}
+            onLogout={handleLogout}
+            onProfile={null}
+            onJobs={null}
+            onLearn={() => setPage("learn")}
+          />
+          <div className="shell-hero">
+            <div className="shell-hero-inner">
+              <div className="shell-kicker">
+                <span className="shell-kicker-line" />
+                <span className="shell-kicker-text">Free Courses</span>
+              </div>
+              <h1 className="shell-title">
+                Your <strong>Learning Path</strong>
+              </h1>
+              <p className="shell-subtitle">
+                Best free courses in Python, Java, AI, ML, Statistics and SQL — curated from Harvard, Helsinki, Google and more.
+              </p>
+            </div>
+          </div>
+          <div className="shell-content">
+            <LearningPath />
+          </div>
+        </div>
+      </>
+    );
+  }
+
   /* ── Guard ── */
   if (!user) { setPage("home"); return null; }
 
@@ -211,6 +250,7 @@ export default function App() {
           onLogout={handleLogout}
           onProfile={null}
           onJobs={null}
+          onLearn={() => setPage("learn")}
         />
 
         {/* Page hero */}
